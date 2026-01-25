@@ -228,6 +228,58 @@ When you're ready to enable real CI/CD:
 3. [Deploy-Dev.md](docs/ci-cd/Deploy-Dev.md) - Deployment workflow
 4. [setup-wif.sh](scripts/setup-wif.sh) - Infrastructure setup script
 
+### Dependency Consistency with Syncpack
+
+This template includes **Syncpack**, a monorepo utility that helps you view, lint, and fix version mismatches across workspace packages.
+
+Syncpack is **optional and educational** — it does not run automatically. You can experiment with it to learn how monorepo dependency consistency works.
+
+#### What Syncpack Does
+
+| Command | Purpose |
+|---------|---------|
+| `pnpm sync:lint` | Reports mismatched dependency versions across packages |
+| `pnpm sync:fix` | Attempts to fix mismatches automatically |
+| `pnpm sync:list` | Lists dependency versions in all workspace packages |
+
+#### Educational Usage
+
+1. Install dependencies (if not already):
+
+```bash
+pnpm install
+```
+
+2. Check for mismatches:
+
+```bash
+pnpm sync:lint
+```
+
+3. List all versions:
+
+```bash
+pnpm sync:list
+```
+
+4. Try fixing mismatches (safe in a local environment):
+
+```bash
+pnpm sync:fix
+```
+
+> **Note:** This is an educational example. Do not use these scripts in production until you understand how version alignment affects your project.
+
+#### How It Works
+
+- Syncpack reads `.syncpackrc.json` to determine which `package.json` files and dependencies to check
+- `versionGroups` ensure dependencies match exactly across all packages
+- `semverGroups` define consistent semver range policies (e.g., all devDependencies use `^`)
+
+You can customize the Syncpack config to match your monorepo's specific needs.
+
+---
+
 ### Version Requirements for CI/CD
 
 | Tool | Minimum Version |

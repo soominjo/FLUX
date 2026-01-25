@@ -1,0 +1,25 @@
+{
+  "$schema": "https://unpkg.com/syncpack/dist/schema.json",
+  "source": [
+    "package.json",
+    "apps/*/package.json",
+    "packages/*/package.json"
+  ],
+  "versionGroups": [
+    {
+      "dependencies": ["**"],
+      "packages": ["**"]
+    }
+  ],
+  "semverGroups": [
+    {
+      "range": "^",
+      "dependencyTypes": ["devDependencies"],
+      "dependencies": ["**"],
+      "packages": ["**"]
+    }
+  ],
+  "___comment_header": "EDUCATIONAL TEMPLATE - Syncpack config with placeholders and hints",
+  "___comment_example_use": "Use pnpm sync:lint, sync:fix, sync:list to explore version consistency"
+}
+
