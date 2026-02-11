@@ -1,0 +1,78 @@
+﻿
+C:\FLUX\apps\web\src\components\dashboard\PhysioPatientView.tsx
+  24:38  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\FLUX\apps\web\src\components\dashboard\TrainerClientView.tsx
+  148:55  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\FLUX\apps\web\src\components\network\InviteManager.tsx
+    6:16  error  'Plus' is defined but never used          @typescript-eslint/no-unused-vars
+   93:31  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  123:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\FLUX\apps\web\src\components\tracking\NutritionLogger.tsx
+    6:10  error  'Plus' is defined but never used          @typescript-eslint/no-unused-vars
+    7:10  error  'Card' is defined but never used          @typescript-eslint/no-unused-vars
+    7:16  error  'CardContent' is defined but never used   @typescript-eslint/no-unused-vars
+    7:29  error  'CardHeader' is defined but never used    @typescript-eslint/no-unused-vars
+    7:41  error  'CardTitle' is defined but never used     @typescript-eslint/no-unused-vars
+  112:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\FLUX\apps\web\src\components\tracking\WaterTracker.tsx
+  2:10  error  'Droplets' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\FLUX\apps\web\src\hooks\useDailyMetrics.ts
+  2:31  error  'serverTimestamp' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\FLUX\apps\web\src\hooks\useNutrition.ts
+   9:3   error  'limit' is defined but never used      @typescript-eslint/no-unused-vars
+  10:3   error  'Timestamp' is defined but never used  @typescript-eslint/no-unused-vars
+  85:17  error  'data' is defined but never used       @typescript-eslint/no-unused-vars
+  85:23  error  'variables' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\FLUX\apps\web\src\hooks\useRelationships.ts
+   9:3   error  'doc' is defined but never used                 @typescript-eslint/no-unused-vars
+  10:3   error  'updateDoc' is defined but never used           @typescript-eslint/no-unused-vars
+  13:24  error  'RelationStatusEnum' is defined but never used  @typescript-eslint/no-unused-vars
+  13:44  error  'RelationTypeEnum' is defined but never used    @typescript-eslint/no-unused-vars
+
+C:\FLUX\apps\web\src\hooks\useSocial.ts
+   8:3   error  'getDocs' is defined but never used     @typescript-eslint/no-unused-vars
+   9:3   error  'collection' is defined but never used  @typescript-eslint/no-unused-vars
+  10:3   error  'query' is defined but never used       @typescript-eslint/no-unused-vars
+  11:3   error  'where' is defined but never used       @typescript-eslint/no-unused-vars
+  14:28  error  'Workout' is defined but never used     @typescript-eslint/no-unused-vars
+
+C:\FLUX\apps\web\src\lib\flux-logic.ts
+   77:40  error  Unexpected any. Specify a different type                @typescript-eslint/no-explicit-any
+  103:7   error  'currentDate' is never reassigned. Use 'const' instead  prefer-const
+  107:11  error  'checkDateString' is assigned a value but never used    @typescript-eslint/no-unused-vars
+
+C:\FLUX\apps\web\src\lib\seed.ts
+  1:27  error  'setDoc' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\FLUX\apps\web\src\pages\auth\LoginPage.tsx
+  25:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  40:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\FLUX\apps\web\src\pages\auth\OnboardingPage.tsx
+  46:9   error  'navigate' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  78:23  error  Unexpected any. Specify a different type       @typescript-eslint/no-explicit-any
+
+C:\FLUX\apps\web\src\pages\auth\SignUpPage.tsx
+  25:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  40:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\FLUX\apps\web\src\pages\dashboard\PhysioDashboard.tsx
+  55:36  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\FLUX\apps\web\src\pages\dashboard\TraineeDashboard.tsx
+   1:10  error  'Link' is defined but never used                         @typescript-eslint/no-unused-vars
+  27:39  error  'isLoadingProviders' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+C:\FLUX\apps\web\src\pages\dashboard\TrainerDashboard.tsx
+  52:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+Γ£û 40 problems (40 errors, 0 warnings)
+  1 error and 0 warnings potentially fixable with the `--fix` option.
+

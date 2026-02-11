@@ -12,14 +12,18 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@repo/functions": "workspace:*",
     "@repo/shared": "workspace:*",
     "@repo/ui": "workspace:*",
     "@tanstack/react-query": "^5.62.0",
-    "@trpc/client": "^11.0.0-rc.660",
-    "@trpc/react-query": "^11.0.0-rc.660",
+    "clsx": "^2.1.0",
+    "firebase": "^10.8.0",
+    "framer-motion": "^11.0.5",
+    "lucide-react": "^0.334.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.22.1",
+    "recharts": "^3.7.0",
+    "tailwind-merge": "^2.2.1"
   },
   "devDependencies": {
     "@repo/config": "workspace:*",

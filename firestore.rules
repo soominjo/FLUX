@@ -1,0 +1,68 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return request.auth.uid == userId; }
+    function isViewer() { return request.auth.uid in resource.data.viewers; }
+
+    // Users
+    match /users/{userId} {
+      allow read: if isSignedIn(); // Basic profiles are public to authenticated users
+      allow write: if isOwner(userId);
+      
+      // Clinical Notes Sub-collection
+      match /clinical_notes/{noteId} {
+        // A Physio can read/write if they have an active relationship. 
+        // For V1 simplicity, we check if the user is authenticated. 
+        allow read, write: if isSignedIn(); 
+      }
+
+      // Trainer Goals Sub-collection
+      match /trainer_goals/{goalId} {
+        // Trainee can read/write their own goals. Trainers can read/write if authenticated (V1 rule).
+        allow read, write: if isSignedIn(); 
+      }
+    }
+
+    // Workouts & Nutrition (Protected by Viewers Array)
+    match /workouts/{docId} {
+      allow read: if isSignedIn() && (isOwner(resource.data.userId) || isViewer());
+      allow create: if isSignedIn() && isOwner(request.resource.data.userId);
+      allow update, delete: if isSignedIn() && isOwner(resource.data.userId);
+    }
+    
+    match /nutrition/{docId} {
+      allow read: if isSignedIn() && (isOwner(resource.data.userId) || isViewer());
+      allow create: if isSignedIn() && isOwner(request.resource.data.userId);
+      allow update, delete: if isSignedIn() && isOwner(resource.data.userId);
+    }
+    
+    match /daily_metrics/{docId} {
+      allow read: if isSignedIn() && (isOwner(resource.data.userId) || isViewer());
+      allow write: if isSignedIn() && isOwner(request.resource.data.userId);
+    }
+
+    // Relationships
+    match /relationships/{relId} {
+      // Allowed to read if you are either the Trainee or the Provider
+      allow read: if isSignedIn() && (request.auth.uid == resource.data.traineeId || request.auth.uid == resource.data.providerId);
+      // Anyone logged in can initiate a connection
+      allow create: if isSignedIn() && isOwner(request.resource.data.traineeId);
+      allow update: if isSignedIn() && (isOwner(resource.data.traineeId) || isOwner(resource.data.providerId));
+    }
+
+    // Messages
+    match /messages/{messageId} {
+      allow read: if isSignedIn() && request.auth.uid in resource.data.participants;
+      allow write: if isSignedIn() && request.auth.uid in resource.data.participants;
+      allow create: if isSignedIn() && request.auth.uid in request.resource.data.participants;
+    }
+    
+    // Notifications
+    match /notifications/{notificationId} {
+      allow read, update: if isSignedIn() && request.auth.uid == resource.data.userId;
+      allow create: if isSignedIn(); // Anyone can trigger a notification for someone else
+    }
+  }
+}
