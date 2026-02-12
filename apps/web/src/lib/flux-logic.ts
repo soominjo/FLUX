@@ -70,6 +70,27 @@ export const getReadinessScore = (recovery: number, strain: number): string => {
 }
 
 /**
+ * Calculate BMI from weight (kg) and height (cm).
+ * Formula: weight / (height_in_meters)^2
+ */
+export const calculateBMI = (weightKg: number, heightCm: number): number => {
+  if (weightKg <= 0 || heightCm <= 0) return 0
+  const heightM = heightCm / 100
+  return Math.round((weightKg / (heightM * heightM)) * 10) / 10
+}
+
+/**
+ * Return the WHO BMI category for a given BMI value.
+ */
+export const getBMICategory = (bmi: number): { label: string; color: string } => {
+  if (bmi <= 0) return { label: '', color: '' }
+  if (bmi < 18.5) return { label: 'Underweight', color: 'text-blue-400' }
+  if (bmi < 25) return { label: 'Healthy Weight', color: 'text-emerald-400' }
+  if (bmi < 30) return { label: 'Overweight', color: 'text-amber-400' }
+  return { label: 'Obese', color: 'text-red-400' }
+}
+
+/**
  * Calculates current streak of consecutive days with activity.
  * @param dates - Array of Date objects or date strings/timestamps representing activity.
  * @returns number - Current streak count

@@ -2,13 +2,91 @@ import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, Button, Input, Label } from '@repo/ui'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../providers/AuthProvider'
-import { useMyProviders, useAddConnection } from '../../hooks/useRelationships'
-import { Copy, Users, UserPlus, Check, Loader2 } from 'lucide-react'
+import {
+  useMyProviders,
+  useAddConnection,
+  useMyPendingProviders,
+} from '../../hooks/useRelationships'
+import { useUserProfile } from '../../hooks/useSocial'
+import { Copy, Users, UserPlus, Check, Loader2, Clock } from 'lucide-react'
 import type { Relationship } from '@repo/shared'
+
+function ConnectionItem({
+  relationship,
+  isPending,
+}: {
+  relationship: Relationship
+  isPending?: boolean
+}) {
+  const { data: profile } = useUserProfile(relationship.providerId)
+
+  if (isPending) {
+    return (
+      <div className="flex items-center justify-between p-3 rounded bg-zinc-950/50 border border-zinc-800">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden">
+            {profile?.photoURL ? (
+              <img
+                src={profile.photoURL}
+                alt={profile.displayName || 'User'}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <span className="text-xs font-bold text-zinc-400">
+                {(profile?.displayName || 'U').charAt(0).toUpperCase()}
+              </span>
+            )}
+          </div>
+          <div>
+            <div className="text-sm font-medium text-white">
+              {profile?.displayName || 'Loading...'}
+            </div>
+            <div className="text-xs text-zinc-500 font-mono">{relationship.type} • Waiting...</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-zinc-800 text-zinc-400 text-[10px] font-medium uppercase tracking-wider">
+          <Clock className="h-3 w-3" />
+          Waiting for Approval
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <Link
+      to={`/profile/${relationship.providerId}`}
+      className="flex items-center justify-between p-3 rounded bg-zinc-950 border border-zinc-800 hover:bg-zinc-800 transition-colors cursor-pointer group"
+    >
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded-full bg-zinc-800 flex items-center justify-center overflow-hidden">
+          {profile?.photoURL ? (
+            <img
+              src={profile.photoURL}
+              alt={profile.displayName || 'User'}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <span className="text-xs font-bold text-zinc-400">
+              {(profile?.displayName || 'U').charAt(0).toUpperCase()}
+            </span>
+          )}
+        </div>
+        <div>
+          <div className="text-sm font-medium text-white group-hover:text-lime-400 transition-colors">
+            {profile?.displayName || 'Loading...'}
+          </div>
+          <div className="text-xs text-zinc-500 font-mono">{relationship.type} • Active</div>
+        </div>
+      </div>
+      <div className="px-2 py-1 rounded bg-lime-400/10 text-lime-400 text-xs font-bold">ACTIVE</div>
+    </Link>
+  )
+}
 
 export function InviteManager() {
   const { user } = useAuth()
   const { data: providers, isLoading: isLoadingProviders } = useMyProviders()
+  const { data: pendingProviders } = useMyPendingProviders()
   const { mutateAsync: addConnection, isPending: isAdding } = useAddConnection()
 
   const [inviteCode, setInviteCode] = useState('')
@@ -56,7 +134,7 @@ export function InviteManager() {
             <Button
               variant="outline"
               onClick={handleCopy}
-              className="border-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-800"
+              className="border-zinc-800 text-zinc-700 hover:text-white hover:bg-zinc-800"
             >
               {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
             </Button>
@@ -78,7 +156,7 @@ export function InviteManager() {
         <CardContent>
           <form onSubmit={handleConnect} className="space-y-4">
             <div className="space-y-2">
-              <Label>Their Invite Code (UID)</Label>
+              <Label className="text-white">Their Invite Code (UID)</Label>
               <Input
                 value={inviteCode}
                 onChange={e => setInviteCode(e.target.value)}
@@ -88,7 +166,7 @@ export function InviteManager() {
             </div>
 
             <div className="space-y-2">
-              <Label>Role</Label>
+              <Label className="text-white">Role</Label>
               <select
                 value={role}
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
@@ -121,36 +199,24 @@ export function InviteManager() {
         <CardContent>
           {isLoadingProviders ? (
             <div className="text-zinc-500 text-sm">Loading team...</div>
-          ) : providers && providers.length > 0 ? (
-            <div className="space-y-3">
-              {providers.map((rel: Relationship) => (
-                <Link
-                  key={rel.id}
-                  to={`/profile/${rel.providerId}`}
-                  className="flex items-center justify-between p-3 rounded bg-zinc-950 border border-zinc-800 hover:bg-zinc-800 transition-colors cursor-pointer group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-400">
-                      {rel.type[0]}
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-white group-hover:text-lime-400 transition-colors">
-                        {rel.type}
-                      </div>
-                      <div className="text-xs text-zinc-500 font-mono">
-                        {rel.providerId.slice(0, 8)}...
-                      </div>
-                    </div>
-                  </div>
-                  <div className="px-2 py-1 rounded bg-lime-400/10 text-lime-400 text-xs font-bold">
-                    ACTIVE
-                  </div>
-                </Link>
-              ))}
-            </div>
           ) : (
-            <div className="text-center py-6 text-zinc-500 text-sm">
-              No connections yet. Add a Trainer!
+            <div className="space-y-3">
+              {/* Pending Connections */}
+              {pendingProviders &&
+                pendingProviders.map((rel: Relationship) => (
+                  <ConnectionItem key={rel.id} relationship={rel} isPending={true} />
+                ))}
+
+              {/* Active Connections */}
+              {providers && providers.length > 0
+                ? providers.map((rel: Relationship) => (
+                    <ConnectionItem key={rel.id} relationship={rel} />
+                  ))
+                : (!pendingProviders || pendingProviders.length === 0) && (
+                    <div className="text-center py-6 text-zinc-500 text-sm">
+                      No connections yet. Add a Trainer!
+                    </div>
+                  )}
             </div>
           )}
         </CardContent>

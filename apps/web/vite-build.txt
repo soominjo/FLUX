@@ -1,0 +1,54 @@
+﻿[36mvite v5.1.4 [32mbuilding for development...[36m[39m
+transforming...
+node.exe : ../../node_modules/.pnpm
+/recharts@3.7.0_@types+react@18.3.2
+7_react-dom@18.3.1_react-is@17.0.2_
+react@18.3.1_redux@5.0.1/node_modul
+es/recharts/es6/cartesian/Bar.js 
+(303:4) A comment
+At C:\Users\genessis contreras\AppD
+ata\Roaming\npm\npx.ps1:24 char:5
++     & "node$exe"  "$basedir/node_
+modules/npm/bin/npx-cli.js" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotS 
+   pecified: (../../node_modu...0  
+  3:4) A comment:String) [], Rem   
+ oteException
+    + FullyQualifiedErrorId : Nati 
+   veCommandError
+ 
+
+"/*#__PURE__*/"
+
+in "../../node_modules/.pnpm/rechar
+ts@3.7.0_@types+react@18.3.27_react
+-dom@18.3.1_react-is@17.0.2_react@1
+8.3.1_redux@5.0.1/node_modules/rech
+arts/es6/cartesian/Bar.js" 
+contains an annotation that Rollup 
+cannot interpret due to the 
+position of the comment. The 
+comment will be removed to avoid 
+issues.
+[32mΓ£ô[39m 2724 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                 [39m[1m[2m    0.46 kB[22m[1m[22m[2m Γöé gzip:   0.29 kB[22m
+[2mdist/[22m[35massets/index-nxDxvdQy.css  [39m[1m[2m   32.74 kB[22m[1m[22m[2m Γöé gzip:   6.35 kB[22m
+[2mdist/[22m[36massets/index-RzXwXUXr.js   [39m[1m[33m1,514.63 kB[39m[22m[2m Γöé gzip: 412.74 kB[22m
+[33m
+(!) Some chunks are larger than 
+500 kB after minification. 
+Consider:
+- Using dynamic import() to 
+code-split the application
+- Use build.rollupOptions.output.ma
+nualChunks to improve chunking: htt
+ps://rollupjs.org/configuration-opt
+ions/#output-manualchunks
+- Adjust chunk size limit for this 
+warning via 
+build.chunkSizeWarningLimit.[39m
+[32mΓ£ô built in 9.22s[39m

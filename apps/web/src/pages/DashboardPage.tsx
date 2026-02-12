@@ -1,5 +1,12 @@
+import { Navigate } from 'react-router-dom'
 import { useAuth } from '../providers/AuthProvider'
-import TraineeDashboard from './dashboard/TraineeDashboard'
+
+const ROLE_REDIRECT: Record<string, string> = {
+  TRAINEE: '/dashboard/workouts',
+  TRAINER: '/dashboard/trainer',
+  PHYSIO: '/dashboard/physio',
+  SUPERADMIN: '/dashboard/admin',
+}
 
 export default function DashboardPage() {
   const { userRole, isLoading } = useAuth()
@@ -12,25 +19,10 @@ export default function DashboardPage() {
     )
   }
 
-  // Role-Based Routing / Rendering
-  if (userRole === 'TRAINEE') {
-    return <TraineeDashboard />
-  }
+  const target = userRole ? ROLE_REDIRECT[userRole] : null
 
-  if (userRole === 'TRAINER') {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-900 text-white">
-        <h1 className="text-2xl">Trainer Dashboard (Coming Soon)</h1>
-      </div>
-    )
-  }
-
-  if (userRole === 'PHYSIO') {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-900 text-white">
-        <h1 className="text-2xl">Physio Dashboard (Coming Soon)</h1>
-      </div>
-    )
+  if (target) {
+    return <Navigate to={target} replace />
   }
 
   return (

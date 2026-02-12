@@ -75,7 +75,7 @@ export function StrainRecoveryChart({ workouts, dailyMetrics }: StrainRecoveryCh
   const hasData = data.some(d => d.strain > 0 || d.recovery !== null)
 
   return (
-    <Card className="border-zinc-800 bg-zinc-900">
+    <Card className="border-zinc-800 bg-zinc-900 text-zinc-400">
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
           <Activity className="h-4 w-4 text-lime-400" />

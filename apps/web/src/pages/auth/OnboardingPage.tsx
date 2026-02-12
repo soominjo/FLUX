@@ -1,14 +1,16 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../../providers/AuthProvider'
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../../lib/firebase'
+import { calculateBMI, getBMICategory } from '../../lib/flux-logic'
+import { calculateMacros } from '../../lib/energyUtils'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@repo/ui'
 import { Button } from '@repo/ui'
 import { Input } from '@repo/ui'
 import { Label } from '@repo/ui'
-import { Loader2, Dumbbell, Stethoscope, Users, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@repo/ui'
+import { Loader2, Dumbbell, Stethoscope, Users, ChevronLeft, ChevronRight, X } from 'lucide-react'
 
 const roles = [
   {
@@ -53,8 +55,39 @@ export default function OnboardingPage() {
     weightKg: '',
     heightCm: '',
   })
+  const [gender, setGender] = useState<'male' | 'female' | ''>('')
+  const [activityLevel, setActivityLevel] = useState<
+    'sedentary' | 'light' | 'moderate' | 'active' | 'athlete' | ''
+  >('')
+  const [goal, setGoal] = useState<'lose' | 'maintain' | 'gain' | ''>('')
   const [trainerBio, setTrainerBio] = useState('')
+  const [trainerExperience, setTrainerExperience] = useState('')
+  const [certifications, setCertifications] = useState<string[]>([])
+  const [certInput, setCertInput] = useState('')
   const [physioLicense, setPhysioLicense] = useState<File | null>(null)
+
+  // BMI auto-calculation
+  const bmiResult = useMemo(() => {
+    const w = Number(traineeData.weightKg)
+    const h = Number(traineeData.heightCm)
+    if (w > 0 && h > 0) {
+      const bmi = calculateBMI(w, h)
+      return { bmi, ...getBMICategory(bmi) }
+    }
+    return null
+  }, [traineeData.weightKg, traineeData.heightCm])
+
+  const handleAddCertification = () => {
+    const trimmed = certInput.trim()
+    if (trimmed && !certifications.includes(trimmed)) {
+      setCertifications([...certifications, trimmed])
+      setCertInput('')
+    }
+  }
+
+  const handleRemoveCertification = (cert: string) => {
+    setCertifications(certifications.filter(c => c !== cert))
+  }
 
   const handleRoleSelect = (roleId: string) => {
     setSelectedRole(roleId)
@@ -83,13 +116,36 @@ export default function OnboardingPage() {
 
       // Add role-specific data
       if (selectedRole === 'TRAINEE') {
+        const age = Number(traineeData.age)
+        const weightKg = Number(traineeData.weightKg)
+        const heightCm = Number(traineeData.heightCm)
+
         userData.metrics = {
-          age: Number(traineeData.age),
-          weightKg: Number(traineeData.weightKg),
-          heightCm: Number(traineeData.heightCm),
+          age,
+          weightKg,
+          heightCm,
+          bmi: bmiResult?.bmi || undefined,
+        }
+
+        if (gender) userData.gender = gender
+        if (activityLevel) userData.activityLevel = activityLevel
+        if (goal) userData.goal = goal
+
+        // Auto-calculate initial nutrition targets using Mifflin-St Jeor + protein priority
+        if (gender && age > 0 && weightKg > 0 && heightCm > 0) {
+          userData.nutritionTargets = calculateMacros(
+            weightKg,
+            heightCm,
+            age,
+            gender,
+            activityLevel || 'moderate',
+            goal || 'maintain'
+          )
         }
       } else if (selectedRole === 'TRAINER') {
         userData.bio = trainerBio
+        userData.experience = trainerExperience
+        userData.certifications = certifications
       } else if (selectedRole === 'PHYSIO') {
         // In a real app, upload file to Storage and get URL
         // For V1, just marking verification pending
@@ -97,6 +153,7 @@ export default function OnboardingPage() {
           isVerified: false,
           licenseUploaded: !!physioLicense,
         }
+        userData.verificationStatus = 'PENDING'
       }
 
       await setDoc(doc(db, 'users', user.uid), userData, { merge: true })
@@ -232,19 +289,177 @@ export default function OnboardingPage() {
                         />
                       </div>
                     </div>
+
+                    {/* Gender */}
+                    <div className="space-y-2">
+                      <Label>Gender</Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        {(['male', 'female'] as const).map(g => (
+                          <button
+                            key={g}
+                            type="button"
+                            onClick={() => setGender(g)}
+                            className={cn(
+                              'rounded-lg border px-4 py-2 text-sm font-medium transition-all capitalize',
+                              gender === g
+                                ? 'border-lime-400 bg-lime-400/10 text-lime-400'
+                                : 'border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-zinc-600'
+                            )}
+                          >
+                            {g}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Activity Level */}
+                    <div className="space-y-2">
+                      <Label>Activity Level</Label>
+                      <div className="grid grid-cols-1 gap-2">
+                        {(
+                          [
+                            {
+                              value: 'sedentary',
+                              label: 'Sedentary',
+                              desc: 'Desk job, little exercise',
+                            },
+                            { value: 'light', label: 'Light', desc: '1-2 workouts / week' },
+                            { value: 'moderate', label: 'Moderate', desc: '3-4 workouts / week' },
+                            { value: 'active', label: 'Active', desc: '5-6 workouts / week' },
+                            { value: 'athlete', label: 'Athlete', desc: 'Daily intense training' },
+                          ] as const
+                        ).map(opt => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setActivityLevel(opt.value)}
+                            className={cn(
+                              'flex items-center justify-between rounded-lg border px-4 py-2.5 text-left text-sm transition-all',
+                              activityLevel === opt.value
+                                ? 'border-lime-400 bg-lime-400/10 text-white'
+                                : 'border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-zinc-600'
+                            )}
+                          >
+                            <span className="font-medium">{opt.label}</span>
+                            <span className="text-xs text-zinc-500">{opt.desc}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Goal */}
+                    <div className="space-y-2">
+                      <Label>Goal</Label>
+                      <div className="grid grid-cols-3 gap-3">
+                        {(
+                          [
+                            { value: 'lose', label: 'Lose Fat' },
+                            { value: 'maintain', label: 'Maintain' },
+                            { value: 'gain', label: 'Build Muscle' },
+                          ] as const
+                        ).map(opt => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setGoal(opt.value)}
+                            className={cn(
+                              'rounded-lg border px-3 py-2 text-sm font-medium transition-all',
+                              goal === opt.value
+                                ? 'border-lime-400 bg-lime-400/10 text-lime-400'
+                                : 'border-zinc-800 bg-zinc-900 text-zinc-400 hover:border-zinc-600'
+                            )}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* BMI Auto-Calculation Display */}
+                    {bmiResult && (
+                      <div className="rounded-lg bg-zinc-900 border border-zinc-800 p-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-zinc-400">Estimated BMI</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl font-bold text-white">{bmiResult.bmi}</span>
+                            <span className={cn('text-sm font-semibold', bmiResult.color)}>
+                              {bmiResult.label}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-zinc-600 italic">
+                          Note: BMI is a screening tool, not a diagnostic measure. It does not
+                          account for muscle mass.
+                        </p>
+                      </div>
+                    )}
                   </>
                 )}
 
                 {/* TRAINER FORM */}
                 {selectedRole === 'TRAINER' && (
-                  <div className="space-y-2">
-                    <Label>Bio / Specialization</Label>
-                    <textarea
-                      className="flex min-h-[80px] w-full rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-lime-400 disabled:cursor-not-allowed disabled:opacity-50"
-                      placeholder="I specialize in hypertrophy..."
-                      value={trainerBio}
-                      onChange={e => setTrainerBio(e.target.value)}
-                    />
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Bio / Specialization</Label>
+                      <textarea
+                        className="flex min-h-[80px] w-full rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-lime-400 disabled:cursor-not-allowed disabled:opacity-50"
+                        placeholder="I specialize in hypertrophy..."
+                        value={trainerBio}
+                        onChange={e => setTrainerBio(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Experience / Background</Label>
+                      <textarea
+                        className="flex min-h-[60px] w-full rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-lime-400 disabled:cursor-not-allowed disabled:opacity-50"
+                        placeholder="5 years of personal training, former athlete..."
+                        value={trainerExperience}
+                        onChange={e => setTrainerExperience(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Certifications</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          value={certInput}
+                          onChange={e => setCertInput(e.target.value)}
+                          onKeyDown={e =>
+                            e.key === 'Enter' && (e.preventDefault(), handleAddCertification())
+                          }
+                          placeholder="e.g. NASM-CPT, ACE, CSCS"
+                          className="bg-zinc-900 border-zinc-800 text-white flex-1"
+                        />
+                        <Button
+                          type="button"
+                          onClick={handleAddCertification}
+                          variant="outline"
+                          className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                        >
+                          Add
+                        </Button>
+                      </div>
+                      {certifications.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          {certifications.map(cert => (
+                            <span
+                              key={cert}
+                              className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-lime-400/10 text-lime-400 text-xs font-medium"
+                            >
+                              {cert}
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveCertification(cert)}
+                                className="hover:text-white"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 

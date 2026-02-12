@@ -49,7 +49,7 @@ export function ChatBox({ otherUserId, otherUserName }: ChatBoxProps) {
   if (isLoading) return <div className="p-4 text-zinc-500">Loading chat...</div>
 
   return (
-    <Card className="h-[500px] flex flex-col border-zinc-800 bg-zinc-900">
+    <Card className="h-[500px] flex flex-col border-zinc-800 bg-zinc-900 text-zinc-400">
       <CardHeader className="py-3 border-b border-zinc-800">
         <CardTitle className="text-sm font-medium flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-lime-500 animate-pulse" />

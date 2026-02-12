@@ -1,42 +1,143 @@
+import { useState, useEffect } from 'react'
+import { doc, updateDoc } from 'firebase/firestore'
+import { db } from '../../lib/firebase'
 import { useAuth } from '../../providers/AuthProvider'
+import { useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { useWorkouts } from '../../hooks/useWorkouts'
 import { useNutrition } from '../../hooks/useNutrition'
 import { useMyProviders } from '../../hooks/useRelationships'
 import { calculateStreak } from '../../lib/flux-logic'
-import { WorkoutLogger } from '../../components/tracking/WorkoutLogger'
-import { ActivityFeedItem } from '../../components/social/ActivityFeedItem'
+import { NewWorkoutLogger } from '../../components/tracking/NewWorkoutLogger'
+import { WorkoutHistoryItem } from '../../components/tracking/WorkoutHistoryItem'
 import { NutritionLogger } from '../../components/tracking/NutritionLogger'
 import { WaterTracker } from '../../components/tracking/WaterTracker'
 import { InviteManager } from '../../components/network/InviteManager'
-import { Card, CardContent, CardHeader, CardTitle } from '@repo/ui'
-import { Flame, Zap, Utensils, Users, BarChart3 } from 'lucide-react'
+import { BuddyRequests } from '../../components/team/BuddyRequests'
+import { Card, CardContent, CardHeader, CardTitle, Input, Label, Button } from '@repo/ui'
+import { Flame, Zap, Utensils, Users, BarChart3, Scale } from 'lucide-react'
 import { NotificationBell } from '../../components/notifications/NotificationBell'
 import { StrainRecoveryChart } from '../../components/analytics/StrainRecoveryChart'
 import { MuscleBalanceChart } from '../../components/analytics/MuscleBalanceChart'
 import { useDailyMetricsRange } from '../../hooks/useDailyMetricsRange'
+import { FluxBar } from '../../components/dashboard/FluxBar'
+import { useFluxSync } from '../../hooks/useFluxSync'
+import { calculateMacros } from '../../lib/energyUtils'
+import type { Gender, ActivityLevel, Goal } from '../../lib/energyUtils'
 
 import { getTodayDateString } from '../../hooks/useDailyMetrics'
 
 export default function TraineeDashboard() {
-  const { user, logout } = useAuth()
+  const { user, logout, userProfile } = useAuth()
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const today = getTodayDateString()
   // 1. Fetch ONLY my workouts for the dashboard
   const { data: workouts, isLoading: isLoadingWorkouts } = useWorkouts(user?.uid)
   const { data: nutritionLogs } = useNutrition(today)
   const { data: providers } = useMyProviders()
   const { data: dailyMetrics } = useDailyMetricsRange(14)
+  const { flux } = useFluxSync()
 
   const lastWorkout = workouts && workouts.length > 0 ? workouts[0] : null
 
   // Logic
   const weeklyStrain = workouts ? workouts.reduce((acc, w) => acc + (w.strainScore || 0), 0) : 0
-  const streak = workouts ? calculateStreak(workouts.map(w => w.date)) : 0
+  const streak = workouts ? calculateStreak(workouts.map(w => w.date as Date)) : 0
+
+  // Daily Readiness: based on yesterday's total strain
+  const yesterdayStrain = (() => {
+    if (!workouts) return 0
+    const yesterday = new Date()
+    yesterday.setDate(yesterday.getDate() - 1)
+    const yStr = yesterday.toISOString().split('T')[0]
+    return workouts.reduce((acc, w) => {
+      let dateStr: string | null = null
+      if (w.date && typeof w.date === 'object' && 'seconds' in w.date) {
+        dateStr = new Date((w.date as { seconds: number }).seconds * 1000)
+          .toISOString()
+          .split('T')[0]
+      } else if (w.date instanceof Date) {
+        dateStr = w.date.toISOString().split('T')[0]
+      }
+      return dateStr === yStr ? acc + (w.strainScore || 0) : acc
+    }, 0)
+  })()
+  const readiness = Math.min(100, Math.max(0, Math.round(100 - yesterdayStrain / 2)))
 
   // Calculate Daily Calories
   const totalCalories = nutritionLogs
     ? nutritionLogs.reduce((acc, log) => acc + log.calories, 0)
     : 0
-  const calorieTarget = 2500
+  const calorieTarget = flux?.dailyTarget ?? 2500
+
+  // --- Body Composition / BMI ---
+  const [heightCm, setHeightCm] = useState<number>(userProfile?.metrics?.heightCm ?? 0)
+  const [weightKg, setWeightKg] = useState<number>(userProfile?.metrics?.weightKg ?? 0)
+  const [isSavingMetrics, setIsSavingMetrics] = useState(false)
+  const [metricsSaved, setMetricsSaved] = useState(false)
+
+  useEffect(() => {
+    if (userProfile?.metrics) {
+      setHeightCm(userProfile.metrics.heightCm ?? 0)
+      setWeightKg(userProfile.metrics.weightKg ?? 0)
+    }
+  }, [userProfile])
+
+  // Backfill nutritionTargets for profiles created before calculateMacros existed
+  useEffect(() => {
+    if (!user || !userProfile?.metrics) return
+    const profile = userProfile as Record<string, unknown>
+    if (profile.nutritionTargets) return // already set
+
+    const { heightCm: h, weightKg: w, age } = userProfile.metrics
+    if (!h || !w || !age) return
+
+    const gender: Gender = (profile.gender as Gender) ?? 'male'
+    const activity: ActivityLevel = (profile.activityLevel as ActivityLevel) ?? 'moderate'
+    const goal: Goal = (profile.goal as Goal) ?? 'maintain'
+
+    const targets = calculateMacros(w, h, age, gender, activity, goal)
+    updateDoc(doc(db, 'users', user.uid), { nutritionTargets: targets }).catch(console.error)
+  }, [user, userProfile])
+
+  const bmi = heightCm > 0 && weightKg > 0 ? weightKg / Math.pow(heightCm / 100, 2) : 0
+  const bmiCategory =
+    bmi === 0
+      ? '—'
+      : bmi < 18.5
+        ? 'Underweight'
+        : bmi < 25
+          ? 'Healthy'
+          : bmi < 30
+            ? 'Overweight'
+            : 'Obese'
+  const bmiColor =
+    bmi === 0
+      ? 'text-zinc-500'
+      : bmi < 18.5
+        ? 'text-blue-400'
+        : bmi < 25
+          ? 'text-emerald-400'
+          : bmi < 30
+            ? 'text-amber-400'
+            : 'text-red-400'
+
+  const saveBodyMetrics = async () => {
+    if (!user) return
+    setIsSavingMetrics(true)
+    try {
+      await updateDoc(doc(db, 'users', user.uid), {
+        'metrics.heightCm': heightCm,
+        'metrics.weightKg': weightKg,
+        'metrics.bmi': Math.round(bmi * 10) / 10,
+      })
+      setMetricsSaved(true)
+      setTimeout(() => setMetricsSaved(false), 2000)
+    } finally {
+      setIsSavingMetrics(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white p-4 md:p-8">
@@ -58,10 +159,14 @@ export default function TraineeDashboard() {
         </div>
 
         <div className="flex items-center gap-4">
-          <WorkoutLogger />
+          <NewWorkoutLogger />
           <NotificationBell />
           <button
-            onClick={() => logout()}
+            onClick={async () => {
+              await logout()
+              queryClient.clear()
+              navigate('/login', { replace: true })
+            }}
             className="text-sm font-medium text-zinc-500 hover:text-zinc-300 underline"
           >
             Sign Out
@@ -82,9 +187,15 @@ export default function TraineeDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-white">
-                  85 <span className="text-sm font-normal text-zinc-500">%</span>
+                  {readiness} <span className="text-sm font-normal text-zinc-500">%</span>
                 </div>
-                <p className="text-xs text-zinc-500 mt-1">Ready for high intensity</p>
+                <p className="text-xs text-zinc-500 mt-1">
+                  {readiness >= 70
+                    ? 'Ready for high intensity'
+                    : readiness >= 40
+                      ? 'Moderate effort recommended'
+                      : 'Consider a rest day'}
+                </p>
               </CardContent>
             </Card>
 
@@ -129,29 +240,79 @@ export default function TraineeDashboard() {
                 </div>
               ) : (
                 workouts?.map(workout => (
-                  <ActivityFeedItem key={workout.id} workout={workout} showUser={false} />
+                  <WorkoutHistoryItem
+                    key={workout.id}
+                    workout={workout as Record<string, unknown>}
+                  />
                 ))
               )}
-            </div>
-          </div>
-
-          {/* ── Your Flux Analytics ── */}
-          <div className="lg:col-span-2">
-            <h2 className="text-xl font-bold mb-4 text-white flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-lime-400" />
-              Your Flux Analytics
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <StrainRecoveryChart workouts={workouts ?? []} dailyMetrics={dailyMetrics ?? []} />
-              <MuscleBalanceChart workouts={workouts ?? []} />
             </div>
           </div>
         </div>
 
         {/* Right Column: Sidebar */}
         <div className="space-y-6">
+          {/* Incoming Buddy Requests */}
+          <BuddyRequests />
+
           {/* Invite / Connectivity */}
           <InviteManager />
+
+          {/* Body Composition Card */}
+          <Card className="border-zinc-800 bg-zinc-900">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center justify-between">
+                <span>Body Composition</span>
+                <Scale className="h-4 w-4 text-lime-400" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-zinc-400">Height (cm)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    placeholder="175"
+                    value={heightCm || ''}
+                    onChange={e => setHeightCm(Number(e.target.value))}
+                    className="bg-zinc-950 border-zinc-800 text-white placeholder:text-zinc-600"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-zinc-400">Weight (kg)</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    placeholder="70"
+                    value={weightKg || ''}
+                    onChange={e => setWeightKg(Number(e.target.value))}
+                    className="bg-zinc-950 border-zinc-800 text-white placeholder:text-zinc-600"
+                  />
+                </div>
+              </div>
+
+              {/* BMI Display */}
+              <div className="rounded-lg bg-zinc-950 border border-zinc-800 p-4 text-center space-y-1">
+                <div className={`text-3xl font-bold ${bmiColor}`}>
+                  {bmi > 0 ? bmi.toFixed(1) : '—'}
+                </div>
+                <div className="text-xs text-zinc-500 uppercase tracking-wider">BMI</div>
+                <div className={`text-sm font-semibold ${bmiColor}`}>{bmiCategory}</div>
+              </div>
+
+              <Button
+                onClick={saveBodyMetrics}
+                disabled={isSavingMetrics || (heightCm === 0 && weightKg === 0)}
+                className="w-full bg-lime-500 hover:bg-lime-600 text-black font-semibold"
+              >
+                {isSavingMetrics ? 'Saving...' : metricsSaved ? '✓ Saved' : 'Save Metrics'}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Energy Flux — dynamic Input↔Output balance */}
+          <FluxBar />
 
           {/* Nutrition Card */}
           <Card className="border-zinc-800 bg-zinc-900">
@@ -193,6 +354,18 @@ export default function TraineeDashboard() {
               <WaterTracker />
             </CardContent>
           </Card>
+
+          {/* ── Your Flux Analytics (bottom of sidebar) ── */}
+          <div>
+            <h2 className="text-lg font-bold mb-4 text-white flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-lime-400" />
+              Your Flux Analytics
+            </h2>
+            <div className="flex flex-col gap-6">
+              <StrainRecoveryChart workouts={workouts ?? []} dailyMetrics={dailyMetrics ?? []} />
+              <MuscleBalanceChart workouts={workouts ?? []} />
+            </div>
+          </div>
         </div>
       </div>
     </div>

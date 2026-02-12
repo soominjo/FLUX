@@ -21,15 +21,22 @@ export function useNotifications() {
       orderBy('createdAt', 'desc')
     )
 
-    const unsubscribe = onSnapshot(q, snapshot => {
-      const notifs = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Notification[]
+    const unsubscribe = onSnapshot(
+      q,
+      snapshot => {
+        const notifs = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Notification[]
 
-      setNotifications(notifs)
-      setUnreadCount(notifs.filter(n => !n.read).length)
-    })
+        console.log('NOTIFICATIONS FETCHED:', notifs)
+        setNotifications(notifs)
+        setUnreadCount(notifs.filter(n => !n.read).length)
+      },
+      error => {
+        console.error('NOTIFICATIONS ERROR:', error)
+      }
+    )
 
     return () => unsubscribe()
   }, [user])

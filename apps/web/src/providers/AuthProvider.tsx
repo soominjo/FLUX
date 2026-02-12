@@ -15,6 +15,7 @@ import type { UserProfile } from '@repo/shared'
 interface AuthContextType {
   user: User | null
   userRole: UserProfile['role'] | null | undefined
+  userProfile: UserProfile | null
   isLoading: boolean
   signInWithGoogle: () => Promise<void>
   signInWithEmail: (email: string, password: string) => Promise<void>
@@ -27,6 +28,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [userRole, setUserRole] = useState<UserProfile['role'] | null | undefined>(undefined)
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -41,15 +43,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (userSnap.exists()) {
             const userData = userSnap.data() as UserProfile
             setUserRole(userData.role)
+            setUserProfile(userData)
           } else {
             setUserRole(null) // User exists in Auth but no profile yet (needs onboarding)
+            setUserProfile(null)
           }
         } catch (error) {
           console.error('Error fetching user profile:', error)
           setUserRole(null)
+          setUserProfile(null)
         }
       } else {
         setUserRole(null)
+        setUserProfile(null)
       }
       setIsLoading(false)
     })
@@ -89,6 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await signOut(auth)
       setUserRole(null)
+      setUserProfile(null)
     } catch (error) {
       console.error('Error signing out', error)
       throw error
@@ -100,6 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         userRole,
+        userProfile,
         isLoading,
         signInWithGoogle,
         signInWithEmail,

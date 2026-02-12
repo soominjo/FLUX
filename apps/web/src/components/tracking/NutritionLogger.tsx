@@ -84,7 +84,7 @@ export function NutritionLogger() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label>Meal Name</Label>
+                <Label className="text-white">Meal Name</Label>
                 <Input
                   value={name}
                   onChange={e => setName(e.target.value)}
@@ -95,7 +95,7 @@ export function NutritionLogger() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Calories</Label>
+                  <Label className="text-white">Calories</Label>
                   <Input
                     type="number"
                     value={calories}
@@ -105,7 +105,7 @@ export function NutritionLogger() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Meal Type</Label>
+                  <Label className="text-white">Meal Type</Label>
                   <select
                     value={mealType}
                     onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
@@ -123,7 +123,7 @@ export function NutritionLogger() {
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label>Protein (g)</Label>
+                  <Label className="text-white">Protein (g)</Label>
                   <Input
                     type="number"
                     value={protein}
@@ -132,7 +132,7 @@ export function NutritionLogger() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Carbs (g)</Label>
+                  <Label className="text-white">Carbs (g)</Label>
                   <Input
                     type="number"
                     value={carbs}
@@ -141,7 +141,7 @@ export function NutritionLogger() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Fat (g)</Label>
+                  <Label className="text-white">Fat (g)</Label>
                   <Input
                     type="number"
                     value={fat}
@@ -166,7 +166,7 @@ export function NutritionLogger() {
                   type="button"
                   variant="ghost"
                   onClick={() => setIsOpen(false)}
-                  className="text-zinc-400 hover:text-white"
+                  className="text-zinc-400 hover:bg-lime-500"
                 >
                   Cancel
                 </Button>

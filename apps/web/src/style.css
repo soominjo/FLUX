@@ -94,6 +94,8 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background-image: none !important;
+  background-color: #09090b; /* zinc-950 */
 }
 
 /* #app removed for full-width layout */

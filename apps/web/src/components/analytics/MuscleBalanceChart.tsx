@@ -42,7 +42,10 @@ function buildMuscleData(workouts: Workout[]): MuscleDataPoint[] {
     // Filter to last 30 days
     if (!workoutDate || workoutDate < thirtyDaysAgo) return
 
-    w.targetedMuscles?.forEach(muscle => {
+    // Handle both old schema (targetedMuscles array) and new (muscleGroup string)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const muscles = w.targetedMuscles || ((w as any).muscleGroup ? [(w as any).muscleGroup] : [])
+    muscles.forEach((muscle: string) => {
       counts[muscle] = (counts[muscle] || 0) + 1
     })
   })
@@ -66,7 +69,7 @@ export function MuscleBalanceChart({ workouts }: MuscleBalanceChartProps) {
   const hasData = data.some(d => d.frequency > 0)
 
   return (
-    <Card className="border-zinc-800 bg-zinc-900">
+    <Card className="border-zinc-800 bg-zinc-900 text-zinc-400">
       <CardHeader className="pb-2">
         <CardTitle className="text-base flex items-center gap-2">
           <Target className="h-4 w-4 text-blue-400" />

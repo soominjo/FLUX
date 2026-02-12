@@ -1,5 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore'
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  addDoc,
+  doc,
+  updateDoc,
+  deleteDoc,
+  serverTimestamp,
+} from 'firebase/firestore'
 import { db, auth } from '../lib/firebase'
 import type { Nutrition } from '@repo/shared'
 
@@ -74,9 +84,46 @@ export function useLogNutrition() {
       await addDoc(collection(db, 'nutrition'), newLog)
     },
     onSuccess: () => {
-      // Invalidate all or specific date?
-      // We can't easily know the exact date string from serverTimestamp without calculation,
-      // but typically it's "today".
+      queryClient.invalidateQueries({ queryKey: NUTRITION_KEYS.all })
+    },
+  })
+}
+
+// Update a nutrition log
+export function useUpdateNutrition() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string
+      data: Partial<Omit<Nutrition, 'id' | 'userId' | 'viewers'>>
+    }) => {
+      const user = auth.currentUser
+      if (!user) throw new Error('Not authenticated')
+
+      await updateDoc(doc(db, 'nutrition', id), data)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: NUTRITION_KEYS.all })
+    },
+  })
+}
+
+// Delete a nutrition log
+export function useDeleteNutrition() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const user = auth.currentUser
+      if (!user) throw new Error('Not authenticated')
+
+      await deleteDoc(doc(db, 'nutrition', id))
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: NUTRITION_KEYS.all })
     },
   })

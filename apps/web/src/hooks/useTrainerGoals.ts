@@ -5,6 +5,7 @@ import {
   orderBy,
   addDoc,
   updateDoc,
+  deleteDoc,
   doc,
   serverTimestamp,
   getDocs,
@@ -52,7 +53,7 @@ export function useTrainerGoals(traineeId: string | undefined) {
         body: `Your trainer assigned: "${title}"`,
         read: false,
         createdAt: serverTimestamp(),
-        link: `/trainer-dashboard`, // Or profile link? usually trainer dashboard doesn't show own goals?
+        link: `/dashboard/trainer`, // Or profile link? usually trainer dashboard doesn't show own goals?
         // Actually Trainee sees goals on their profile -> `/profile/${trainerId}`
         // But we don't know trainerId here easily without prop passing or user context check?
         // Ah, trainerId is passed in args.
@@ -77,11 +78,36 @@ export function useTrainerGoals(traineeId: string | undefined) {
     },
   })
 
+  // Update Goal Mutation
+  const updateGoalMutation = useMutation({
+    mutationFn: async ({ goalId, title }: { goalId: string; title: string }) => {
+      if (!traineeId) throw new Error('No trainee ID')
+      const goalRef = doc(db, `users/${traineeId}/trainer_goals`, goalId)
+      await updateDoc(goalRef, { title })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trainer-goals', traineeId] })
+    },
+  })
+
+  // Delete Goal Mutation
+  const deleteGoalMutation = useMutation({
+    mutationFn: async (goalId: string) => {
+      if (!traineeId) throw new Error('No trainee ID')
+      await deleteDoc(doc(db, `users/${traineeId}/trainer_goals`, goalId))
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trainer-goals', traineeId] })
+    },
+  })
+
   return {
     goals,
     isLoading,
     addGoal: addGoalMutation.mutateAsync,
     toggleGoal: toggleGoalMutation.mutateAsync,
+    updateGoal: updateGoalMutation.mutateAsync,
+    deleteGoal: deleteGoalMutation.mutateAsync,
     isAdding: addGoalMutation.isPending,
   }
 }

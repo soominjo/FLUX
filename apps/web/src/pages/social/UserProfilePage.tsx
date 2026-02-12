@@ -2,72 +2,16 @@ import { useParams } from 'react-router-dom'
 import { useUserProfile } from '../../hooks/useSocial'
 import { useWorkouts } from '../../hooks/useWorkouts'
 import { ActivityFeedItem } from '../../components/social/ActivityFeedItem'
-import { Loader2, Shield, Trophy, FileText, Target, CheckCircle } from 'lucide-react'
-import { Card, CardHeader, CardTitle, CardContent, cn } from '@repo/ui'
-import { calculateStreak } from '../../lib/flux-logic'
-import { useAuth } from '../../providers/AuthProvider'
-import { useClinicalNotes } from '../../hooks/useClinicalNotes'
+import { EditProfileModal } from '../../components/profile/EditProfileModal'
+import { Loader2, Shield, Trophy, Target, CheckCircle, Edit2 } from 'lucide-react'
+import { Card, CardHeader, CardTitle, CardContent, Button, cn } from '@repo/ui'
 import { useTrainerGoals } from '../../hooks/useTrainerGoals'
 import { ChatBox } from '../../components/chat/ChatBox'
-import type { ClinicalNote, Goal } from '@repo/shared'
-
-// ─── Physio Notes Feed ────────────────────────────────────────────────────────
-function PhysioNotesFeed({ physioId }: { physioId: string | undefined }) {
-  const { user } = useAuth()
-
-  // The notes live in MY (trainee) sub-collection, filtered by this physio's uid
-  const { data: notes, isLoading } = useClinicalNotes(user?.uid, physioId)
-
-  console.log('FETCHED PHYSIO NOTES:', { traineeId: user?.uid, physioId, notes, isLoading })
-
-  if (!user) return null
-  if (isLoading) return <div className="text-zinc-500 animate-pulse">Loading recovery plan...</div>
-
-  return (
-    <div className="space-y-6">
-      <h2 className="text-xl font-bold flex items-center gap-2">
-        <FileText className="h-5 w-5 text-purple-400" />
-        Recovery Plan &amp; Notes
-      </h2>
-
-      {notes && notes.length > 0 ? (
-        <div className="space-y-4">
-          {notes.map((note: ClinicalNote) => (
-            <Card key={note.id} className="border-zinc-800 bg-zinc-900/50">
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-start">
-                  <CardTitle className="text-sm font-medium text-purple-300">
-                    Clinical Note
-                  </CardTitle>
-                  <span className="text-xs text-zinc-500">
-                    {note.timestamp
-                      ? new Date(
-                          (note.timestamp as { seconds: number }).seconds * 1000
-                        ).toLocaleDateString()
-                      : 'Recent'}
-                  </span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-zinc-300 whitespace-pre-wrap text-sm leading-relaxed">
-                  {note.content}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-12 border border-zinc-800 rounded-lg bg-zinc-900/30 text-zinc-500">
-          <FileText className="h-8 w-8 mx-auto mb-2 opacity-40" />
-          <p>No clinical notes found from this Physio.</p>
-          <p className="text-xs mt-1 text-zinc-600">
-            Notes will appear here once the specialist adds them.
-          </p>
-        </div>
-      )}
-    </div>
-  )
-}
+import { calculateStreak } from '../../lib/flux-logic'
+import { useAuth } from '../../providers/AuthProvider'
+import { ClinicalNotesSection } from '../../components/dashboard/ClinicalNotesSection'
+import { useState } from 'react'
+import type { Goal } from '@repo/shared'
 
 // ─── Trainer Goals Feed ───────────────────────────────────────────────────────
 function TrainerGoalsFeed({ trainerId }: { trainerId: string | undefined }) {
@@ -137,8 +81,16 @@ function TrainerGoalsFeed({ trainerId }: { trainerId: string | undefined }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function UserProfilePage() {
   const { uid } = useParams<{ uid: string }>()
-  const { data: profile, isLoading: isLoadingProfile } = useUserProfile(uid || '')
+  const { user } = useAuth()
+  const {
+    data: profile,
+    isLoading: isLoadingProfile,
+    refetch: refetchProfile,
+  } = useUserProfile(uid || '')
   const { data: workouts, isLoading: isLoadingWorkouts } = useWorkouts(uid)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+
+  const isOwnProfile = user?.uid === uid
 
   if (isLoadingProfile) {
     return (
@@ -165,12 +117,35 @@ export default function UserProfilePage() {
       <div className="max-w-4xl mx-auto space-y-8">
         {/* ── Profile Header ── */}
         <div className="flex items-center gap-6">
-          <div className="h-24 w-24 rounded-full bg-zinc-800 flex items-center justify-center text-3xl font-bold text-zinc-500 border-4 border-zinc-900 ring-2 ring-zinc-800">
-            {profile.displayName?.charAt(0) || 'U'}
+          {/* Avatar */}
+          <div className="relative">
+            <div className="h-24 w-24 rounded-full bg-gradient-to-br from-lime-500 to-blue-500 flex items-center justify-center text-3xl font-bold text-white border-4 border-zinc-900 ring-2 ring-zinc-800 overflow-hidden flex-shrink-0">
+              {profile.photoURL ? (
+                <img src={profile.photoURL} alt="Profile" className="h-full w-full object-cover" />
+              ) : (
+                profile.displayName?.charAt(0)?.toUpperCase() || 'U'
+              )}
+            </div>
           </div>
-          <div>
-            <h1 className="text-3xl font-bold">{profile.displayName}</h1>
-            <div className="flex items-center gap-2 mt-2">
+
+          {/* Profile Info */}
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <h1 className="text-3xl font-bold">{profile.displayName}</h1>
+              {isOwnProfile && (
+                <Button
+                  onClick={() => setIsEditModalOpen(true)}
+                  size="sm"
+                  className="bg-lime-500 hover:bg-lime-600 text-black font-semibold flex items-center gap-1"
+                >
+                  <Edit2 className="h-3.5 w-3.5" />
+                  Edit
+                </Button>
+              )}
+            </div>
+
+            {/* Role Badge */}
+            <div className="flex items-center gap-2 mt-2 mb-3">
               <span className="px-2 py-0.5 rounded text-xs font-bold bg-zinc-800 text-zinc-300">
                 {profile.role}
               </span>
@@ -180,6 +155,26 @@ export default function UserProfilePage() {
                 </span>
               )}
             </div>
+
+            {/* Bio and Location */}
+            {profile.bio && <p className="text-sm text-zinc-300 mb-2">{profile.bio}</p>}
+            {profile.location && (
+              <p className="text-xs text-zinc-500 mb-3">📍 {profile.location}</p>
+            )}
+
+            {/* Tags */}
+            {profile.tags && profile.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {profile.tags.map(tag => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-lime-500/10 text-lime-400 border border-lime-500/20"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Streak badge */}
@@ -218,10 +213,46 @@ export default function UserProfilePage() {
 
           {/* Main Feed Area */}
           <div className={isTrainee ? 'md:col-span-2 space-y-6' : 'space-y-6'}>
-            {profile.role === 'PHYSIO' ? (
-              <PhysioNotesFeed physioId={uid} />
-            ) : profile.role === 'TRAINER' ? (
-              <TrainerGoalsFeed trainerId={uid} />
+            {profile.role === 'TRAINER' ? (
+              <>
+                {/* Trainer Credentials */}
+                {(profile.experience ||
+                  (profile.certifications && profile.certifications.length > 0)) && (
+                  <Card className="border-zinc-800 bg-zinc-900">
+                    <CardHeader>
+                      <CardTitle className="text-base text-zinc-400 flex items-center gap-2">
+                        <Shield className="h-4 w-4" /> Credentials
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {profile.experience && (
+                        <div>
+                          <h4 className="text-sm font-medium text-zinc-500 mb-1">Experience</h4>
+                          <p className="text-zinc-300 text-sm whitespace-pre-wrap">
+                            {profile.experience}
+                          </p>
+                        </div>
+                      )}
+                      {profile.certifications && profile.certifications.length > 0 && (
+                        <div>
+                          <h4 className="text-sm font-medium text-zinc-500 mb-2">Certifications</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {profile.certifications.map((cert: string) => (
+                              <span
+                                key={cert}
+                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-lime-400/10 text-lime-400 text-xs font-medium"
+                              >
+                                {cert}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+                <TrainerGoalsFeed trainerId={uid} />
+              </>
             ) : (
               <>
                 <h2 className="text-xl font-bold">Recent Activity</h2>
@@ -241,9 +272,30 @@ export default function UserProfilePage() {
           </div>
         </div>
 
-        {/* ── Chat Box — always visible at bottom of every profile ── */}
-        <ChatBox otherUserId={uid || ''} otherUserName={profile.displayName} />
+        {/* ── Clinical Records — only visible to Physio / Admin viewers ── */}
+        {(user?.role === 'PHYSIO' || user?.role === 'ADMIN') && !isOwnProfile && (
+          <div className="mt-8 border-t border-zinc-800 pt-8">
+            <h2 className="text-xl font-semibold mb-4 text-white">Clinical Records</h2>
+            <ClinicalNotesSection patientId={uid!} />
+          </div>
+        )}
+
+        {/* ── Chat Box — only visible when viewing other profiles ── */}
+        {!isOwnProfile && <ChatBox otherUserId={uid || ''} otherUserName={profile.displayName} />}
       </div>
+
+      {/* Edit Profile Modal */}
+      {isEditModalOpen && (
+        <EditProfileModal
+          profile={profile}
+          userId={uid || ''}
+          onClose={() => setIsEditModalOpen(false)}
+          onSuccess={() => {
+            refetchProfile()
+            setIsEditModalOpen(false)
+          }}
+        />
+      )}
     </div>
   )
 }

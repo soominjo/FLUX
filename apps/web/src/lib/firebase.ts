@@ -2,6 +2,7 @@ import { initializeApp } from 'firebase/app'
 import { getAnalytics } from 'firebase/analytics'
 import { getAuth } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
+import { getStorage } from 'firebase/storage'
 
 // Your web app's Firebase configuration
 // using Vite environment variables for security
@@ -22,6 +23,7 @@ const app = initializeApp(firebaseConfig)
 const analytics = getAnalytics(app)
 const auth = getAuth(app) // For User Authentication
 const db = getFirestore(app) // For your NoSQL Database
+const storage = getStorage(app) // For File Storage (images, documents, etc.)
 
 // Export them to use in your app
-export { app, analytics, auth, db }
+export { app, analytics, auth, db, storage }
