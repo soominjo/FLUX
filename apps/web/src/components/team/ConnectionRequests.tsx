@@ -91,14 +91,17 @@ export function ConnectionRequests() {
         </span>
       </div>
       <div className="grid gap-2">
-        {requests.map(req => (
-          <RequestCard
-            key={req.id}
-            relationshipId={req.id}
-            traineeId={req.traineeId}
-            onRespond={handleRespond}
-          />
-        ))}
+        {requests.map(
+          req =>
+            req.id && (
+              <RequestCard
+                key={req.id}
+                relationshipId={req.id}
+                traineeId={req.traineeId}
+                onRespond={handleRespond}
+              />
+            )
+        )}
       </div>
     </div>
   )

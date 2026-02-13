@@ -46,7 +46,7 @@ export default function AdminDashboard() {
   const queryClient = useQueryClient()
   const { data: pendingPhysios, isLoading } = useAdminPendingPhysios()
   const [processing, setProcessing] = useState<string | null>(null)
-  const [activeView, setActiveView] = useState<'admin' | 'trainer' | 'physio'>('admin')
+  const [activeView, setActiveView] = useState<string>('admin')
 
   const updateStatus = useMutation({
     mutationFn: async ({ uid, status }: { uid: string; status: 'APPROVED' | 'REJECTED' }) => {

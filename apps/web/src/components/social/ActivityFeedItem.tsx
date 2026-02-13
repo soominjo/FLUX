@@ -37,7 +37,8 @@ export function ActivityFeedItem({
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
   const [editContent, setEditContent] = useState('')
 
-  const isPhysio = user?.role === 'PHYSIO' || user?.role === 'ADMIN'
+  const userRole = (user as unknown as Record<string, unknown>)?.role
+  const isPhysio = userRole === 'PHYSIO' || userRole === 'ADMIN'
   const hasNotes = notes && notes.length > 0
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -63,8 +64,8 @@ export function ActivityFeedItem({
   }
 
   const startEditing = (note: Record<string, unknown>) => {
-    setEditingNoteId(note.id)
-    setEditContent(note.content)
+    setEditingNoteId((note as Record<string, unknown>).id as string | null)
+    setEditContent((note as Record<string, unknown>).content as string)
   }
 
   const saveEdit = async (noteId: string) => {

@@ -38,7 +38,8 @@ export function useFluxSync(): FluxSyncResult {
     const bmr = calculateBMR(metrics.weightKg, metrics.heightCm, metrics.age, gender)
 
     // 2. Activity level: use profile setting, or infer from recent workout count
-    let activityLevel: string = (userProfile as Record<string, unknown>)?.activityLevel ?? ''
+    let activityLevel: string =
+      ((userProfile as Record<string, unknown>)?.activityLevel as string | undefined) ?? ''
     if (!activityLevel) {
       const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
       const recentWorkouts = (workouts ?? []).filter(w => {
@@ -56,7 +57,11 @@ export function useFluxSync(): FluxSyncResult {
 
     // 3. Goal from profile, default to maintain
     const goal: 'lose' | 'gain' | 'maintain' =
-      (userProfile as Record<string, unknown>)?.goal ?? 'maintain'
+      ((userProfile as Record<string, unknown>)?.goal as
+        | 'lose'
+        | 'gain'
+        | 'maintain'
+        | undefined) ?? 'maintain'
     const dailyTarget = calculateTarget(bmr, activityLevel, goal)
 
     // 4. Calories consumed today
@@ -88,7 +93,9 @@ export function useFluxSync(): FluxSyncResult {
       const duration = (wAny.durationMinutes as number) ?? (wAny.durationMins as number) ?? 30
       const distanceKm = (wAny.distanceKm as number) || undefined
 
-      return sum + calculateCaloriesBurned(activityType, duration, metrics.weightKg, distanceKm)
+      return (
+        sum + calculateCaloriesBurned(activityType, duration, metrics.weightKg || 75, distanceKm)
+      )
     }, 0)
 
     // 6. Compute the unified Flux state

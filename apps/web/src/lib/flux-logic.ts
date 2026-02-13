@@ -4,18 +4,13 @@
  */
 
 /**
- * Calculates the Strain Score (0-21) based on workout duration and intensity.
- * @param durationMinutes - Duration of the workout in minutes
- * @param intensity - Perceived intensity (RPE) from 1-10
- * @returns number - Strain Score between 0 and 21
+ * @param durationMinutes
+ * @param intensity
+ * @returns
  */
 export const calculateStrain = (durationMinutes: number, intensity: number): number => {
-  // Base calculation: (Duration * Intensity) / Scale Factor
-  // Arbitrary scale factor to map common workouts to a 0-21 scale (similar to Whoop)
   const rawScore = (durationMinutes * intensity) / 40
 
-  // Logarithmic damping to make it harder to reach max score
-  // This is a simplified approximation
   const dampenedScore = 21 * (1 - Math.exp(-rawScore / 10))
 
   return Math.min(Math.max(Number(dampenedScore.toFixed(1)), 0), 21)
@@ -116,8 +111,6 @@ export const calculateStreak = (dates: (Date | string | { seconds: number })[]):
   const today = new Date().toISOString().split('T')[0]
   const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
 
-  // If no activity today or yesterday, streak is 0 (or could be broken)
-  // Logic: Streak continues if latest activity is today OR yesterday.
   const latest = sortedDates[0]
   if (latest !== today && latest !== yesterday) {
     return 0
@@ -125,20 +118,7 @@ export const calculateStreak = (dates: (Date | string | { seconds: number })[]):
 
   let streak = 0
 
-  // Iterate backwards to count consecutive days
   for (let i = 0; i < sortedDates.length; i++) {
-    // In our sorted unique list, if the streak is unbroken,
-    // we expect the date at index i to match our checkDateString.
-    // However, since we might skip today if latest is yesterday, we need to be careful.
-    // Simpler approach: Check if sortedDates includes the expected date.
-
-    // Better Logic:
-    // 1. Start from 'latest' (which is today or yesterday).
-    // 2. Count backwards.
-
-    // Actually simpler: iterate through sortedDates.
-    // The difference between date[i] and date[i+1] must be 1 day.
-
     if (i === 0) {
       streak = 1
       continue

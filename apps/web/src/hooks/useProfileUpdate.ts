@@ -157,7 +157,7 @@ export function useProfileUpdate() {
       if (data.goals !== undefined) updatePayload.goals = data.goals
       if (data.certifications !== undefined) updatePayload.certifications = data.certifications
 
-      await updateDoc(doc(db, 'users', user.uid), updatePayload)
+      await updateDoc(doc(db, 'users', user.uid), updatePayload as Record<string, unknown>)
 
       alert('Profile Updated Successfully!')
       window.location.reload()

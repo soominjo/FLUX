@@ -270,7 +270,7 @@ export function PhysioPatientView({ patientId, onBack }: PhysioPatientViewProps)
                                 : 'Just now'}
                             </span>
                             <div className="flex items-center gap-2">
-                              {(note as Record<string, unknown>).workoutId && (
+                              {((note as Record<string, unknown>).workoutId as boolean) && (
                                 <span className="text-lime-400/70 flex items-center gap-1">
                                   <Activity className="h-3 w-3" /> Linked to Workout
                                 </span>
@@ -328,7 +328,7 @@ export function PhysioPatientView({ patientId, onBack }: PhysioPatientViewProps)
             workouts.map(workout => (
               <PatientWorkoutCard
                 key={workout.id}
-                workout={workout as Record<string, unknown>}
+                workout={workout}
                 notes={notes.filter(
                   (n: Record<string, unknown>) =>
                     (n as Record<string, unknown>).workoutId === workout.id

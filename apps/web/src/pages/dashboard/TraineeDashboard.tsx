@@ -10,6 +10,7 @@ import { useMyProviders } from '../../hooks/useRelationships'
 import { calculateStreak } from '../../lib/flux-logic'
 import { NewWorkoutLogger } from '../../components/tracking/NewWorkoutLogger'
 import { WorkoutHistoryItem } from '../../components/tracking/WorkoutHistoryItem'
+import type { WorkoutExerciseLog } from '@repo/shared'
 import { NutritionLogger } from '../../components/tracking/NutritionLogger'
 import { WaterTracker } from '../../components/tracking/WaterTracker'
 import { InviteManager } from '../../components/network/InviteManager'
@@ -239,12 +240,14 @@ export default function TraineeDashboard() {
                   No workouts logged yet. Start training!
                 </div>
               ) : (
-                workouts?.map(workout => (
-                  <WorkoutHistoryItem
-                    key={workout.id}
-                    workout={workout as Record<string, unknown>}
-                  />
-                ))
+                workouts?.map(workout => {
+                  return (
+                    <WorkoutHistoryItem
+                      key={workout.id}
+                      workout={workout as unknown as WorkoutExerciseLog & { id: string }}
+                    />
+                  )
+                })
               )}
             </div>
           </div>

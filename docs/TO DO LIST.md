@@ -79,9 +79,9 @@ _Goal: Connect the Trainee to their support network._
 - [x ] UI: "Add Connection" input field (to paste a code).
 - [x ] Database: Creating a `relationships` document connecting two UIDs.
 
-- [ ] **Permission Logic (The "Viewers" Array)**
-- [ ] Logic: When a `relationship` is created, trigger an update (or cloud function/client logic) to append the new Trainer/Buddy ID to the `viewers` array of the Trainee’s existing/future workouts.
-- [ ] _Optimization:_ For V1, just ensure _new_ workouts look up active relationships and add those IDs to the `viewers` field on creation.
+- [x ] **Permission Logic (The "Viewers" Array)**
+- [x ] Logic: When a `relationship` is created, trigger an update (or cloud function/client logic) to append the new Trainer/Buddy ID to the `viewers` array of the Trainee’s existing/future workouts.
+- [x ] _Optimization:_ For V1, just ensure _new_ workouts look up active relationships and add those IDs to the `viewers` field on creation.
 
 - [x] **Firestore Security Rules (V2 - Critical)**
 - [x] Update `workouts` rules: Allow read if `request.auth.uid` is in `resource.data.viewers`.
@@ -91,15 +91,15 @@ _Goal: Connect the Trainee to their support network._
 
 _Goal: Trainers and Physios can see their clients' data._
 
-- [ ] **Trainer Dashboard**
-- [ ] UI: "My Clients" List (Query `relationships` where `providerId` == `me`).
-- [ ] UI: Client Detail View (Query `workouts` where `userId` == `clientId`).
-- [ ] UI: Heatmap visualization of "Targeted Muscles" (use Recharts).
+- [X ] **Trainer Dashboard**
+- [X ] UI: "My Clients" List (Query `relationships` where `providerId` == `me`).
+- [X ] UI: Client Detail View (Query `workouts` where `userId` == `clientId`).
+- [ X] UI: Heatmap visualization of "Targeted Muscles" (use Recharts).
 
-- [ ] **Physio Dashboard**
-- [ ] UI: "Patient Roster".
-- [ ] UI: "Pain & Mobility" specific view (Filter workouts by `perceivedPain` > 0).
-- [ ] Feature: "Add Clinical Note" (Save to a sub-collection `users/{clientId}/clinical_notes` visible only to Physio).
+- [X ] **Physio Dashboard**
+- [x ] UI: "Patient Roster".
+- [x] UI: "Pain & Mobility" specific view (Filter workouts by `perceivedPain` > 0).
+- [X ] Feature: "Add Clinical Note" (Save to a sub-collection `users/{clientId}/clinical_notes` visible only to Physio).
 
 - [x] **Gym Buddy Dashboard**
 - [x] UI: "Friend Feed" (Simple list of "User X finished a workout").
@@ -109,23 +109,23 @@ _Goal: Trainers and Physios can see their clients' data._
 
 _Goal: Provide insights, not just data logs._
 
-- [ ] **Flux Logic Library (`apps/web/src/lib/flux-logic.ts`)**
-- [ ] Function: `calculateRecovery(sleepHours, restingHR, perceivedEnergy)`.
-- [ ] Function: `calculateStrain(workoutVolume, duration)`.
-- [ ] Function: `getReadinessScore(recovery, strain)`.
+- [x] **Flux Logic Library (`apps/web/src/lib/flux-logic.ts`)**
+- [x] Function: `calculateRecovery(sleepHours, restingHR, perceivedEnergy)`.
+- [x] Function: `calculateStrain(workoutVolume, duration)`.
+- [x] Function: `getReadinessScore(recovery, strain)`.
 
-- [ ] **Visualization**
-- [ ] Install `recharts`.
-- [ ] Create "Strain vs. Recovery" Line Chart.
-- [ ] Create "Muscle Balance" Radar Chart.
+- [x] **Visualization**
+- [x] Ins tall `recharts`.
+- [x] Create "Strain vs. Recovery" Line Chart.
+- [x] Create "Muscle Balance" Radar Chart.
 
 ## Phase 6: Testing & Quality Assurance
 
 _Goal: Ensure reliability before launch._
 
-- [ ] **Unit Testing (Vitest)**
-- [ ] Test the `Flux Logic` math functions (ensure inputs result in correct scores).
-- [ ] Test Zod Schemas (ensure invalid data throws errors).
+- [] **Unit Testing (Vitest)**
+- [] Test the `Flux Logic` math functions (ensure inputs result in correct scores).
+- [] Test Zod Schemas (ensure invalid data throws errors).
 
 - [ ] **Integration Testing**
 - [ ] Manual Test: Create a Trainee account and a Trainer account.

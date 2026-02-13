@@ -26,7 +26,7 @@ export function ClinicalNotesSection({ patientId }: Props) {
       {notes.map(note => (
         <div key={note.id} className="p-4 bg-zinc-900 rounded-lg border border-zinc-800">
           <div className="flex justify-between text-xs text-zinc-400 mb-2">
-            <span>{note.type?.toUpperCase() || 'NOTE'}</span>
+            <span>NOTE</span>
             <span>
               {note.timestamp && typeof note.timestamp === 'object' && 'seconds' in note.timestamp
                 ? new Date(

@@ -1,16 +1,18 @@
 import { useState, useMemo } from 'react'
 import { useAuth } from '../../providers/AuthProvider'
+import { useMyClients } from '../../hooks/useRelationships'
 import type { Relationship } from '@repo/shared'
 import { TrainerClientView } from '../../components/dashboard/TrainerClientView'
 import { ConnectionRequests } from '../../components/team/ConnectionRequests'
 import { Card, CardContent, CardHeader, CardTitle } from '@repo/ui'
-import { Users, ChevronRight } from 'lucide-react'
+import { Users, ChevronRight, User } from 'lucide-react'
 import { NotificationBell } from '../../components/notifications/NotificationBell'
 import { UserMenu } from '../../components/nav/UserMenu'
 import { ChatBox } from '../../components/chat/ChatBox'
 
 export default function TrainerDashboard() {
   const { user, userProfile } = useAuth()
+  const { data: clients, isLoading } = useMyClients()
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
 
   // Deduplicate clients for Admin view (group by traineeId)

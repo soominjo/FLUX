@@ -34,11 +34,7 @@ export default function DashboardLayout() {
 
   if (userRole === 'SUPERADMIN') {
     // Admin sees Admin Panel + Trainee Features
-    currentNavItems = [
-      ...adminLinks,
-      { to: '#', label: '---', icon: () => <div className="h-px w-full bg-zinc-800 my-1" /> },
-      ...traineeLinks,
-    ]
+    currentNavItems = [...adminLinks, ...traineeLinks]
   }
 
   const sidebarContent = (

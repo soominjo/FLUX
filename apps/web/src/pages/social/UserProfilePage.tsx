@@ -82,11 +82,7 @@ function TrainerGoalsFeed({ trainerId }: { trainerId: string | undefined }) {
 export default function UserProfilePage() {
   const { uid } = useParams<{ uid: string }>()
   const { user } = useAuth()
-  const {
-    data: profile,
-    isLoading: isLoadingProfile,
-    refetch: refetchProfile,
-  } = useUserProfile(uid || '')
+  const { data: profile, isLoading: isLoadingProfile } = useUserProfile(uid || '')
   const { data: workouts, isLoading: isLoadingWorkouts } = useWorkouts(uid)
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
 
@@ -273,12 +269,14 @@ export default function UserProfilePage() {
         </div>
 
         {/* ── Clinical Records — only visible to Physio / Admin viewers ── */}
-        {(user?.role === 'PHYSIO' || user?.role === 'ADMIN') && !isOwnProfile && (
-          <div className="mt-8 border-t border-zinc-800 pt-8">
-            <h2 className="text-xl font-semibold mb-4 text-white">Clinical Records</h2>
-            <ClinicalNotesSection patientId={uid!} />
-          </div>
-        )}
+        {((user as unknown as Record<string, unknown>)?.role === 'PHYSIO' ||
+          (user as unknown as Record<string, unknown>)?.role === 'ADMIN') &&
+          !isOwnProfile && (
+            <div className="mt-8 border-t border-zinc-800 pt-8">
+              <h2 className="text-xl font-semibold mb-4 text-white">Clinical Records</h2>
+              <ClinicalNotesSection patientId={uid!} />
+            </div>
+          )}
 
         {/* ── Chat Box — only visible when viewing other profiles ── */}
         {!isOwnProfile && <ChatBox otherUserId={uid || ''} otherUserName={profile.displayName} />}
@@ -286,15 +284,7 @@ export default function UserProfilePage() {
 
       {/* Edit Profile Modal */}
       {isEditModalOpen && (
-        <EditProfileModal
-          profile={profile}
-          userId={uid || ''}
-          onClose={() => setIsEditModalOpen(false)}
-          onSuccess={() => {
-            refetchProfile()
-            setIsEditModalOpen(false)
-          }}
-        />
+        <EditProfileModal profile={profile} onClose={() => setIsEditModalOpen(false)} />
       )}
     </div>
   )

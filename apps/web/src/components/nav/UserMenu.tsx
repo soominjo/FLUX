@@ -180,18 +180,7 @@ export function UserMenu({ onEditProfile }: UserMenuProps) {
 
       {/* Edit Profile Modal */}
       {isEditModalOpen && profile && (
-        <EditProfileModal
-          profile={profile}
-          userId={user?.uid || ''}
-          onClose={() => setIsEditModalOpen(false)}
-          onSuccess={() => {
-            setIsEditModalOpen(false)
-            // Refresh profile data
-            if (user?.uid) {
-              queryClient.invalidateQueries({ queryKey: ['user', user.uid] })
-            }
-          }}
-        />
+        <EditProfileModal profile={profile} onClose={() => setIsEditModalOpen(false)} />
       )}
     </>
   )
