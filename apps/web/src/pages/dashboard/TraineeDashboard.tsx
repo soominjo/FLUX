@@ -298,7 +298,7 @@ export default function TraineeDashboard({ viewAsId, viewAsName }: TraineeDashbo
           {!isAdminView && <InviteManager />}
 
           {/* Body Composition Card */}
-          <Card className="border-zinc-800 bg-white">
+          <Card className="border-zinc-800 bg-zinc-900">
             <CardHeader>
               <CardTitle className="text-white flex items-center justify-between">
                 <span>Body Composition</span>
