@@ -111,7 +111,7 @@ export default function PhysioDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Col 1: Patient List (Always Visible) */}
           <div className="space-y-6">
-            <Card className="border-zinc-800 bg-zinc-900 h-[calc(100vh-100px)] flex flex-col">
+            <Card className="border-zinc-800 bg-zinc-900 h-[calc(100vh-100px)] flex flex-col text-zinc-400">
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
                   <User className="h-5 w-5 text-zinc-400" />

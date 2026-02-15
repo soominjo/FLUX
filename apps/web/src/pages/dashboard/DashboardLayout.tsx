@@ -1,22 +1,35 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { NavLink, Link, Outlet } from 'react-router-dom'
 import { useAuth } from '../../providers/AuthProvider'
 import { NotificationBell } from '../../components/notifications/NotificationBell'
 import { UserMenu } from '../../components/nav/UserMenu'
-import { Dumbbell, Apple, Users, Menu, X, LayoutGrid, Users2 } from 'lucide-react'
+import { Dumbbell, Apple, Users, Menu, X, ArrowLeft, Shield } from 'lucide-react'
 
-const traineeLinks = [
-  { to: '/dashboard/workouts', label: 'Workouts', icon: Dumbbell },
-  { to: '/dashboard/nutrition', label: 'Nutrition', icon: Apple },
-  { to: '/dashboard/connect', label: 'Connect', icon: Users },
+type TraineeTab = 'workouts' | 'nutrition' | 'connect'
+
+const traineeLinks: { key: TraineeTab; to: string; label: string; icon: typeof Dumbbell }[] = [
+  { key: 'workouts', to: '/dashboard/workouts', label: 'Workouts', icon: Dumbbell },
+  { key: 'nutrition', to: '/dashboard/nutrition', label: 'Nutrition', icon: Apple },
+  { key: 'connect', to: '/dashboard/connect', label: 'Connect', icon: Users },
 ]
 
-const adminLinks = [
-  { to: '/dashboard/admin', label: 'Command Center', icon: LayoutGrid },
-  { to: '/dashboard/admin/users', label: 'User Management', icon: Users2 },
-]
+interface DashboardLayoutProps {
+  adminMode?: boolean
+  activeTab?: TraineeTab
+  onTabChange?: (tab: TraineeTab) => void
+  onExitAdmin?: () => void
+  viewingUserName?: string
+  children?: ReactNode
+}
 
-export default function DashboardLayout() {
+export default function DashboardLayout({
+  adminMode = false,
+  activeTab,
+  onTabChange,
+  onExitAdmin,
+  viewingUserName,
+  children,
+}: DashboardLayoutProps) {
   const { user, userRole } = useAuth()
   const [drawerOpen, setDrawerOpen] = useState(false)
 
@@ -29,32 +42,65 @@ export default function DashboardLayout() {
   }
   const homeLink = ROLE_HOME[userRole || ''] || '/dashboard'
 
-  // Dynamically build nav items based on role
-  let currentNavItems = [...traineeLinks]
-
-  if (userRole === 'SUPERADMIN') {
-    // Admin sees Admin Panel + Trainee Features
-    currentNavItems = [...adminLinks, ...traineeLinks]
-  }
-
   const sidebarContent = (
     <>
-      {/* Brand — links to role-specific home */}
+      {/* Admin Mode: Exit button at top of sidebar */}
+      {adminMode && onExitAdmin && (
+        <button
+          onClick={onExitAdmin}
+          className="flex items-center gap-2 w-full px-4 py-3 text-sm font-medium text-amber-400 bg-amber-400/10 border-b border-amber-400/20 hover:bg-amber-400/20 transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Exit to Admin
+        </button>
+      )}
+
+      {/* Brand */}
       <Link to={homeLink} className="block px-6 py-6 hover:bg-zinc-800/30 transition-colors">
         <h2 className="text-xl font-bold text-white tracking-tight">
           FL<span className="text-lime-400">UX</span>
         </h2>
-        <p className="text-xs text-zinc-500 mt-1 truncate">{user?.displayName || 'Trainee'}</p>
+        <p className="text-xs text-zinc-500 mt-1 truncate">
+          {adminMode && viewingUserName ? viewingUserName : user?.displayName || 'Trainee'}
+        </p>
       </Link>
+
+      {/* Admin impersonation badge */}
+      {adminMode && (
+        <div className="mx-3 mb-2 px-3 py-2 rounded-lg bg-amber-400/10 border border-amber-400/20">
+          <div className="flex items-center gap-2 text-amber-400 text-xs font-medium">
+            <Shield className="h-3 w-3" />
+            Admin View — Read Only
+          </div>
+        </div>
+      )}
 
       {/* Nav Links */}
       <nav className="flex-1 px-3 space-y-1">
-        {currentNavItems.map(({ to, label, icon: Icon }, index) => {
-          // Divider logic
-          if (label === '---') {
-            return <div key={`divider-${index}`} className="h-px bg-zinc-800 my-2 mx-3" />
+        {traineeLinks.map(({ key, to, label, icon: Icon }) => {
+          if (adminMode && onTabChange) {
+            // In admin mode: clickable buttons that switch tab content (no URL change)
+            const isActive = activeTab === key
+            return (
+              <button
+                key={key}
+                onClick={() => {
+                  onTabChange(key)
+                  setDrawerOpen(false)
+                }}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors w-full text-left ${
+                  isActive
+                    ? 'bg-lime-400/10 text-lime-400'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
+                }`}
+              >
+                <Icon className="h-5 w-5" />
+                {label}
+              </button>
+            )
           }
 
+          // Normal trainee mode: standard NavLinks
           return (
             <NavLink
               key={to}
@@ -128,7 +174,7 @@ export default function DashboardLayout() {
 
         {/* Page Content */}
         <main className="flex-1 p-4 md:p-8 bg-zinc-950 overflow-y-auto">
-          <Outlet />
+          {children || <Outlet />}
         </main>
       </div>
     </div>

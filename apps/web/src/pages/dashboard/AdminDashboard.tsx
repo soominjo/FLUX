@@ -13,12 +13,21 @@ import {
   LayoutDashboard,
   Stethoscope,
   Dumbbell,
+  HeartPulse,
+  ArrowLeft,
 } from 'lucide-react'
 import { UserMenu } from '../../components/nav/UserMenu'
 import type { UserProfile } from '@repo/shared'
 import { AdminStats } from '../../components/admin/AdminStats'
+import { TraineeSelector } from '../../components/admin/TraineeSelector'
 import TrainerDashboard from './TrainerDashboard'
 import PhysioDashboard from './PhysioDashboard'
+import TraineeDashboard from './TraineeDashboard'
+import NutritionPage from './NutritionPage'
+import ConnectPage from './ConnectPage'
+import DashboardLayout from './DashboardLayout'
+
+type TraineeTab = 'workouts' | 'nutrition' | 'connect'
 
 interface PendingPhysio extends UserProfile {
   uid: string
@@ -46,7 +55,11 @@ export default function AdminDashboard() {
   const queryClient = useQueryClient()
   const { data: pendingPhysios, isLoading } = useAdminPendingPhysios()
   const [processing, setProcessing] = useState<string | null>(null)
+  // Type kept as string so button variant comparisons don't get narrowed by early returns
   const [activeView, setActiveView] = useState<string>('admin')
+  const [selectedTraineeId, setSelectedTraineeId] = useState<string | null>(null)
+  const [selectedTraineeName, setSelectedTraineeName] = useState<string>('')
+  const [activeTraineeTab, setActiveTraineeTab] = useState<TraineeTab>('workouts')
 
   const updateStatus = useMutation({
     mutationFn: async ({ uid, status }: { uid: string; status: 'APPROVED' | 'REJECTED' }) => {
@@ -59,32 +72,100 @@ export default function AdminDashboard() {
     },
   })
 
+  const exitSubView = () => {
+    setActiveView('admin')
+    setSelectedTraineeId(null)
+    setSelectedTraineeName('')
+    setActiveTraineeTab('workouts')
+  }
+
+  // ── Sub-view: Trainer ──
   if (activeView === 'trainer') {
     return (
-      <div className="relative">
-        <div className="absolute top-4 left-4 z-50">
-          <Button variant="outline" onClick={() => setActiveView('admin')} className="gap-2">
-            <Shield className="h-4 w-4" /> Back to Admin
+      <div>
+        <div className="sticky top-0 z-50 bg-zinc-950 border-b border-zinc-800 px-4 py-3 flex items-center gap-3">
+          <Button variant="outline" size="sm" onClick={exitSubView} className="gap-2">
+            <ArrowLeft className="h-4 w-4" /> Exit View
           </Button>
+          <span className="text-sm font-medium text-zinc-400">Trainer View</span>
         </div>
         <TrainerDashboard />
       </div>
     )
   }
 
+  // ── Sub-view: Physio ──
   if (activeView === 'physio') {
     return (
-      <div className="relative">
-        <div className="absolute top-4 left-4 z-50">
-          <Button variant="outline" onClick={() => setActiveView('admin')} className="gap-2">
-            <Shield className="h-4 w-4" /> Back to Admin
+      <div>
+        <div className="sticky top-0 z-50 bg-zinc-950 border-b border-zinc-800 px-4 py-3 flex items-center gap-3">
+          <Button variant="outline" size="sm" onClick={exitSubView} className="gap-2">
+            <ArrowLeft className="h-4 w-4" /> Exit View
           </Button>
+          <span className="text-sm font-medium text-zinc-400">Physio View</span>
         </div>
         <PhysioDashboard />
       </div>
     )
   }
 
+  // ── Sub-view: Trainee (with sidebar + tab navigation) ──
+  if (activeView === 'trainee') {
+    // Step 2: Selected trainee → full sidebar layout with tab-based content
+    if (selectedTraineeId) {
+      let tabContent: React.ReactNode
+      switch (activeTraineeTab) {
+        case 'nutrition':
+          tabContent = <NutritionPage viewAsId={selectedTraineeId} />
+          break
+        case 'connect':
+          tabContent = <ConnectPage viewAsId={selectedTraineeId} />
+          break
+        default:
+          tabContent = (
+            <TraineeDashboard viewAsId={selectedTraineeId} viewAsName={selectedTraineeName} />
+          )
+      }
+
+      return (
+        <DashboardLayout
+          adminMode
+          activeTab={activeTraineeTab}
+          onTabChange={setActiveTraineeTab}
+          onExitAdmin={exitSubView}
+          viewingUserName={selectedTraineeName}
+        >
+          {tabContent}
+        </DashboardLayout>
+      )
+    }
+
+    // Step 1: Trainee selection screen
+    return (
+      <div className="min-h-screen bg-zinc-950 text-zinc-400 p-4 md:p-8">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="flex items-center gap-4">
+            <Button variant="outline" onClick={exitSubView} className="gap-2">
+              <ArrowLeft className="h-4 w-4" /> Back to Admin
+            </Button>
+            <div>
+              <h2 className="text-xl font-bold text-white">Trainee View</h2>
+              <p className="text-sm text-zinc-400">Select a trainee to view their dashboard.</p>
+            </div>
+          </div>
+          <TraineeSelector
+            onSelectTrainee={(userId, displayName) => {
+              setSelectedTraineeId(userId)
+              setSelectedTraineeName(displayName)
+              setActiveTraineeTab('workouts')
+            }}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  // ── Default: Admin Overview ──
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-zinc-950 text-zinc-400">
@@ -116,6 +197,14 @@ export default function AdminDashboard() {
                 <LayoutDashboard className="h-4 w-4" /> Overview
               </Button>
               <Button
+                variant={activeView === 'trainee' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setActiveView('trainee')}
+                className="gap-2"
+              >
+                <HeartPulse className="h-4 w-4" /> Trainee View
+              </Button>
+              <Button
                 variant={activeView === 'trainer' ? 'secondary' : 'ghost'}
                 size="sm"
                 onClick={() => setActiveView('trainer')}
@@ -140,7 +229,7 @@ export default function AdminDashboard() {
         <AdminStats />
 
         {/* Pending Physio Section */}
-        <Card className="border-zinc-800 bg-zinc-900">
+        <Card className="border-zinc-800 bg-zinc-900 text-zinc-400">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Clock className="h-5 w-5 text-amber-400" />

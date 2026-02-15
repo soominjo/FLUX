@@ -1,7 +1,7 @@
 import { useAuth } from '../providers/AuthProvider'
 import { useState } from 'react'
 import { updateProfile as updateAuthProfile } from 'firebase/auth'
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
+import { doc, updateDoc, serverTimestamp, type FieldValue } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { db, storage } from '../lib/firebase'
 
@@ -146,8 +146,8 @@ export function useProfileUpdate() {
       })
 
       // Update Firestore
-      const updatePayload: Record<string, unknown> = {
-        displayName: data.displayName || user.displayName,
+      const updatePayload: Record<string, string | string[] | FieldValue | undefined> = {
+        displayName: data.displayName || user.displayName || undefined,
         updatedAt: serverTimestamp(),
       }
 
@@ -157,7 +157,7 @@ export function useProfileUpdate() {
       if (data.goals !== undefined) updatePayload.goals = data.goals
       if (data.certifications !== undefined) updatePayload.certifications = data.certifications
 
-      await updateDoc(doc(db, 'users', user.uid), updatePayload as Record<string, unknown>)
+      await updateDoc(doc(db, 'users', user.uid), updatePayload)
 
       alert('Profile Updated Successfully!')
       window.location.reload()

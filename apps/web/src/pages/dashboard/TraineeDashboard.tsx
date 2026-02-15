@@ -23,22 +23,36 @@ import { MuscleBalanceChart } from '../../components/analytics/MuscleBalanceChar
 import { useDailyMetricsRange } from '../../hooks/useDailyMetricsRange'
 import { FluxBar } from '../../components/dashboard/FluxBar'
 import { useFluxSync } from '../../hooks/useFluxSync'
+import { useUserProfile } from '../../hooks/useSocial'
 import { calculateMacros } from '../../lib/energyUtils'
 import type { Gender, ActivityLevel, Goal } from '../../lib/energyUtils'
 
 import { getTodayDateString } from '../../hooks/useDailyMetrics'
 
-export default function TraineeDashboard() {
+interface TraineeDashboardProps {
+  viewAsId?: string
+  viewAsName?: string
+}
+
+export default function TraineeDashboard({ viewAsId, viewAsName }: TraineeDashboardProps) {
   const { user, logout, userProfile } = useAuth()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const today = getTodayDateString()
-  // 1. Fetch ONLY my workouts for the dashboard
-  const { data: workouts, isLoading: isLoadingWorkouts } = useWorkouts(user?.uid)
-  const { data: nutritionLogs } = useNutrition(today)
+
+  const isAdminView = !!viewAsId
+  const targetUserId = viewAsId || user?.uid
+
+  // Fetch data for the target user (self or viewed trainee)
+  const { data: workouts, isLoading: isLoadingWorkouts } = useWorkouts(targetUserId)
+  const { data: nutritionLogs } = useNutrition(today, viewAsId)
   const { data: providers } = useMyProviders()
-  const { data: dailyMetrics } = useDailyMetricsRange(14)
+  const { data: dailyMetrics } = useDailyMetricsRange(14, viewAsId)
   const { flux } = useFluxSync()
+
+  // When viewing another user, fetch their profile for BMI/metrics
+  const { data: targetProfile } = useUserProfile(viewAsId || '')
+  const displayProfile = isAdminView ? targetProfile : userProfile
 
   const lastWorkout = workouts && workouts.length > 0 ? workouts[0] : null
 
@@ -73,21 +87,22 @@ export default function TraineeDashboard() {
   const calorieTarget = flux?.dailyTarget ?? 2500
 
   // --- Body Composition / BMI ---
-  const [heightCm, setHeightCm] = useState<number>(userProfile?.metrics?.heightCm ?? 0)
-  const [weightKg, setWeightKg] = useState<number>(userProfile?.metrics?.weightKg ?? 0)
+  const [heightCm, setHeightCm] = useState<number>(displayProfile?.metrics?.heightCm ?? 0)
+  const [weightKg, setWeightKg] = useState<number>(displayProfile?.metrics?.weightKg ?? 0)
   const [isSavingMetrics, setIsSavingMetrics] = useState(false)
   const [metricsSaved, setMetricsSaved] = useState(false)
 
   useEffect(() => {
-    if (userProfile?.metrics) {
-      setHeightCm(userProfile.metrics.heightCm ?? 0)
-      setWeightKg(userProfile.metrics.weightKg ?? 0)
+    if (displayProfile?.metrics) {
+      setHeightCm(displayProfile.metrics.heightCm ?? 0)
+      setWeightKg(displayProfile.metrics.weightKg ?? 0)
     }
-  }, [userProfile])
+  }, [displayProfile])
 
   // Backfill nutritionTargets for profiles created before calculateMacros existed
+  // Only runs for the user's own profile (not admin viewing)
   useEffect(() => {
-    if (!user || !userProfile?.metrics) return
+    if (isAdminView || !user || !userProfile?.metrics) return
     const profile = userProfile as Record<string, unknown>
     if (profile.nutritionTargets) return // already set
 
@@ -100,7 +115,7 @@ export default function TraineeDashboard() {
 
     const targets = calculateMacros(w, h, age, gender, activity, goal)
     updateDoc(doc(db, 'users', user.uid), { nutritionTargets: targets }).catch(console.error)
-  }, [user, userProfile])
+  }, [user, userProfile, isAdminView])
 
   const bmi = heightCm > 0 && weightKg > 0 ? weightKg / Math.pow(heightCm / 100, 2) : 0
   const bmiCategory =
@@ -141,39 +156,60 @@ export default function TraineeDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white p-4 md:p-8">
-      {/* Header */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Welcome back, <span className="text-lime-400">{user?.displayName?.split(' ')[0]}</span>
-          </h1>
-          <div className="flex items-center gap-2 mt-1">
-            <p className="text-zinc-400">Your personal performance hub.</p>
-            {streak > 0 && (
-              <div className="flex items-center gap-1 px-2 py-0.5 bg-orange-500/10 rounded-full border border-orange-500/20 text-orange-500 text-xs font-bold animate-pulse">
-                <Flame className="h-3 w-3 fill-orange-500" />
-                {streak} Day Streak!
-              </div>
+    <div
+      className={
+        isAdminView ? 'bg-zinc-950 text-white' : 'min-h-screen bg-zinc-950 text-white p-4 md:p-8'
+      }
+    >
+      {/* Header — hidden when inside admin layout (DashboardLayout provides its own chrome) */}
+      {!isAdminView && (
+        <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">
+              {isAdminView ? (
+                <>
+                  Viewing <span className="text-lime-400">{viewAsName}</span>
+                </>
+              ) : (
+                <>
+                  Welcome back,{' '}
+                  <span className="text-lime-400">{user?.displayName?.split(' ')[0]}</span>
+                </>
+              )}
+            </h1>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-zinc-400">
+                {isAdminView ? 'Admin view — read only.' : 'Your personal performance hub.'}
+              </p>
+              {streak > 0 && (
+                <div className="flex items-center gap-1 px-2 py-0.5 bg-orange-500/10 rounded-full border border-orange-500/20 text-orange-500 text-xs font-bold animate-pulse">
+                  <Flame className="h-3 w-3 fill-orange-500" />
+                  {streak} Day Streak!
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {!isAdminView && (
+              <>
+                <NewWorkoutLogger />
+                <NotificationBell />
+                <button
+                  onClick={async () => {
+                    await logout()
+                    queryClient.clear()
+                    navigate('/login', { replace: true })
+                  }}
+                  className="text-sm font-medium text-zinc-500 hover:text-zinc-300 underline"
+                >
+                  Sign Out
+                </button>
+              </>
             )}
           </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <NewWorkoutLogger />
-          <NotificationBell />
-          <button
-            onClick={async () => {
-              await logout()
-              queryClient.clear()
-              navigate('/login', { replace: true })
-            }}
-            className="text-sm font-medium text-zinc-500 hover:text-zinc-300 underline"
-          >
-            Sign Out
-          </button>
-        </div>
-      </header>
+        </header>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column: Main Metrics */}
@@ -255,14 +291,14 @@ export default function TraineeDashboard() {
 
         {/* Right Column: Sidebar */}
         <div className="space-y-6">
-          {/* Incoming Buddy Requests */}
-          <BuddyRequests />
+          {/* Incoming Buddy Requests — hidden in admin view */}
+          {!isAdminView && <BuddyRequests />}
 
-          {/* Invite / Connectivity */}
-          <InviteManager />
+          {/* Invite / Connectivity — hidden in admin view */}
+          {!isAdminView && <InviteManager />}
 
           {/* Body Composition Card */}
-          <Card className="border-zinc-800 bg-zinc-900">
+          <Card className="border-zinc-800 bg-white">
             <CardHeader>
               <CardTitle className="text-white flex items-center justify-between">
                 <span>Body Composition</span>
@@ -304,59 +340,65 @@ export default function TraineeDashboard() {
                 <div className={`text-sm font-semibold ${bmiColor}`}>{bmiCategory}</div>
               </div>
 
-              <Button
-                onClick={saveBodyMetrics}
-                disabled={isSavingMetrics || (heightCm === 0 && weightKg === 0)}
-                className="w-full bg-lime-500 hover:bg-lime-600 text-black font-semibold"
-              >
-                {isSavingMetrics ? 'Saving...' : metricsSaved ? '✓ Saved' : 'Save Metrics'}
-              </Button>
+              {!isAdminView && (
+                <Button
+                  onClick={saveBodyMetrics}
+                  disabled={isSavingMetrics || (heightCm === 0 && weightKg === 0)}
+                  className="w-full bg-lime-500 hover:bg-lime-600 text-black font-semibold"
+                >
+                  {isSavingMetrics ? 'Saving...' : metricsSaved ? '✓ Saved' : 'Save Metrics'}
+                </Button>
+              )}
             </CardContent>
           </Card>
 
-          {/* Energy Flux — dynamic Input↔Output balance */}
-          <FluxBar />
+          {/* Energy Flux — hidden in admin view (belongs on Nutrition tab) */}
+          {!isAdminView && <FluxBar />}
 
-          {/* Nutrition Card */}
-          <Card className="border-zinc-800 bg-zinc-900">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center justify-between">
-                <span>Nutrition</span>
-                <Utensils className="h-4 w-4 text-lime-400" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-center py-4">
-                <div className="text-4xl font-bold text-white">{totalCalories}</div>
-                <div className="text-sm text-zinc-500">/ {calorieTarget} kcal</div>
-              </div>
+          {/* Nutrition Card — hidden in admin view (belongs on Nutrition tab) */}
+          {!isAdminView && (
+            <Card className="border-zinc-800 bg-zinc-900">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center justify-between">
+                  <span>Nutrition</span>
+                  <Utensils className="h-4 w-4 text-lime-400" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-center py-4">
+                  <div className="text-4xl font-bold text-white">{totalCalories}</div>
+                  <div className="text-sm text-zinc-500">/ {calorieTarget} kcal</div>
+                </div>
 
-              <NutritionLogger />
+                <NutritionLogger />
 
-              {/* Recent Logs Mini List */}
-              <div className="space-y-2 mt-4">
-                {nutritionLogs?.slice(0, 3).map(log => (
-                  <div
-                    key={log.id}
-                    className="flex justify-between text-sm p-2 bg-zinc-950 rounded border border-zinc-800"
-                  >
-                    <span className="text-zinc-300">{log.name}</span>
-                    <span className="text-zinc-500">{log.calories} kcal</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                {/* Recent Logs Mini List */}
+                <div className="space-y-2 mt-4">
+                  {nutritionLogs?.slice(0, 3).map(log => (
+                    <div
+                      key={log.id}
+                      className="flex justify-between text-sm p-2 bg-zinc-950 rounded border border-zinc-800"
+                    >
+                      <span className="text-zinc-300">{log.name}</span>
+                      <span className="text-zinc-500">{log.calories} kcal</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-          {/* Water Tracker Card */}
-          <Card className="border-zinc-800 bg-zinc-900">
-            <CardHeader>
-              <CardTitle className="text-white text-base">Hydration</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <WaterTracker />
-            </CardContent>
-          </Card>
+          {/* Water Tracker Card — hidden in admin view */}
+          {!isAdminView && (
+            <Card className="border-zinc-800 bg-zinc-900">
+              <CardHeader>
+                <CardTitle className="text-white text-base">Hydration</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <WaterTracker />
+              </CardContent>
+            </Card>
+          )}
 
           {/* ── Your Flux Analytics (bottom of sidebar) ── */}
           <div>

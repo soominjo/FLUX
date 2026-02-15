@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm lint-staged:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfix\\(web\\): resolve lint errors and improve type safety across dashboard and hooks\n\nFix ESLint no-explicit-any violations, remove unused variables, tighten type\ncasts in flux-logic, useFluxSync, and UI components for cleaner builds.\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)",
+      "Bash(npx turbo run build:*)",
+      "Bash(npx tsc:*)",
+      "Bash(findstr:*)",
+      "Bash(node -e:*)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm --filter web test -- --run src/lib/flux-logic.test.ts)",
+      "Bash(pnpm typecheck:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm format:*)",
+      "Bash(pnpm precheck:*)"
+    ]
+  }
+}

@@ -101,8 +101,8 @@ export function App() {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Route>
 
-          {/* Trainee routes (SUPERADMIN also has access via DashboardLayout sidebar) */}
-          <Route element={<ProtectedRoute allowedRoles={['TRAINEE', 'SUPERADMIN']} />}>
+          {/* Trainee routes (sidebar layout — SUPERADMIN uses embedded Trainee View instead) */}
+          <Route element={<ProtectedRoute allowedRoles={['TRAINEE']} />}>
             <Route path="/dashboard" element={<DashboardLayout />}>
               <Route path="workouts" element={<WorkoutsPage />} />
               <Route path="nutrition" element={<NutritionPage />} />

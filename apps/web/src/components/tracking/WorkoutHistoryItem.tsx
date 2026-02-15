@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Card, CardContent, Button, cn } from '@repo/ui'
+import { Button, cn } from '@repo/ui'
 import { useDeleteWorkout } from '../../hooks/useWorkouts'
 import { EditWorkoutModal } from './EditWorkoutModal'
 import { Pencil, Trash2, Loader2, Dumbbell, Activity } from 'lucide-react'
@@ -19,114 +19,123 @@ export function WorkoutHistoryItem({ workout }: WorkoutHistoryItemProps) {
     setConfirmDelete(false)
   }
 
-  const formattedDate =
-    workout.performedAt &&
-    typeof workout.performedAt === 'object' &&
-    'seconds' in workout.performedAt
-      ? new Date(workout.performedAt.seconds * 1000).toLocaleDateString()
-      : 'Just now'
+  // Format "time ago" from Firestore Timestamp
+  const timeAgo = (() => {
+    if (
+      !workout.performedAt ||
+      typeof workout.performedAt !== 'object' ||
+      !('seconds' in workout.performedAt)
+    )
+      return 'Just now'
 
-  // 1. Check if we have Lifting Data (Sets/Reps)
+    const ms = Date.now() - workout.performedAt.seconds * 1000
+    const mins = Math.floor(ms / 60000)
+    if (mins < 1) return 'Just now'
+    if (mins < 60) return `${mins}m ago`
+    const hrs = Math.floor(mins / 60)
+    if (hrs < 24) return `${hrs}h ago`
+    const days = Math.floor(hrs / 24)
+    if (days === 1) return 'Yesterday'
+    if (days < 7) return `${days}d ago`
+    return new Date(workout.performedAt.seconds * 1000).toLocaleDateString()
+  })()
+
   const isLifting = workout.sets !== undefined && workout.sets > 0
-
-  // 2. Check if we have Cardio Data (Distance/Duration)
   const isCardio = workout.durationMins !== undefined && workout.durationMins > 0
+
+  const rpeColor =
+    workout.rpe >= 8
+      ? 'border-red-500/20 text-red-400 bg-red-500/10'
+      : workout.rpe >= 5
+        ? 'border-orange-500/20 text-orange-400 bg-orange-500/10'
+        : 'border-emerald-500/20 text-emerald-400 bg-emerald-500/10'
 
   return (
     <>
-      <Card className="border-zinc-800 bg-zinc-900 hover:border-zinc-700 transition-colors">
-        <CardContent className="p-4">
-          <div className="flex items-start justify-between gap-4">
-            {/* Left: Exercise info & Stats */}
-            <div className="flex items-start gap-4 min-w-0 flex-1">
-              <div
-                className={cn(
-                  'mt-0.5 rounded-lg p-2 shrink-0',
-                  isCardio ? 'bg-cyan-500/10' : 'bg-zinc-800'
-                )}
-              >
-                {isCardio ? (
-                  <Activity className="h-5 w-5 text-cyan-400" />
-                ) : (
-                  <Dumbbell className="h-5 w-5 text-lime-400" />
-                )}
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-semibold text-white truncate">{workout.exerciseName}</h3>
-                    <p className="text-xs text-zinc-500 mt-0.5">{formattedDate}</p>
-                  </div>
-
-                  {/* Actions (Top Right) */}
-                  <div className="flex items-center gap-1 shrink-0 ml-2">
-                    <button
-                      onClick={() => setEditOpen(true)}
-                      className="p-1.5 rounded text-zinc-500 hover:text-lime-400 hover:bg-zinc-800 transition-colors"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
-
-                    {confirmDelete ? (
-                      <Button
-                        variant="ghost"
-                        onClick={handleDelete}
-                        disabled={isDeleting}
-                        className="text-red-400 hover:text-red-300 text-xs px-2 py-1 h-auto"
-                      >
-                        {isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Confirm'}
-                      </Button>
-                    ) : (
-                      <button
-                        onClick={() => setConfirmDelete(true)}
-                        className="p-1.5 rounded text-zinc-500 hover:text-red-400 hover:bg-zinc-800 transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* CONDITIONALLY RENDER THE STATS */}
-                <div className="mt-2 text-sm">
-                  {isLifting ? (
-                    <span className="block font-medium text-lime-400">
-                      🏋️ {workout.sets} x {workout.reps} @ {workout.weight}kg
-                    </span>
-                  ) : isCardio ? (
-                    <span className="block font-medium text-cyan-400">
-                      🏃 {workout.distanceKm || 0}km in {workout.durationMins}m
-                    </span>
-                  ) : (
-                    <span className="text-zinc-500 italic">No stats recorded</span>
-                  )}
-                </div>
-
-                <div className="text-xs text-zinc-500 mt-1 flex items-center gap-2">
-                  <span
-                    className={cn(
-                      'px-1.5 py-0.5 rounded border text-[10px] font-bold',
-                      workout.rpe >= 8
-                        ? 'border-red-500/20 text-red-500 bg-red-500/10'
-                        : workout.rpe >= 5
-                          ? 'border-orange-500/20 text-orange-500 bg-orange-500/10'
-                          : 'border-emerald-500/20 text-emerald-500 bg-emerald-500/10'
-                    )}
-                  >
-                    RPE {workout.rpe}
-                  </span>
-                  {workout.note && (
-                    <span className="italic truncate border-l border-zinc-700 pl-2">
-                      "{workout.note}"
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
+      <div className="flex items-center justify-between p-4 rounded-lg border border-zinc-800 bg-zinc-900/50 transition-colors hover:bg-zinc-900 group">
+        {/* Left: Icon + Identity */}
+        <div className="flex items-center gap-4 min-w-0">
+          <div
+            className={cn(
+              'shrink-0 p-2.5 rounded-full',
+              isCardio && !isLifting
+                ? 'bg-blue-500/15 text-blue-400'
+                : 'bg-purple-500/15 text-purple-400'
+            )}
+          >
+            {isCardio && !isLifting ? (
+              <Activity className="h-5 w-5" />
+            ) : (
+              <Dumbbell className="h-5 w-5" />
+            )}
           </div>
-        </CardContent>
-      </Card>
+
+          <div className="min-w-0">
+            <div className="text-base font-semibold text-white truncate">
+              {workout.exerciseName}
+            </div>
+            <div className="text-sm text-zinc-500">{timeAgo}</div>
+          </div>
+        </div>
+
+        {/* Right: Data Badges + Actions */}
+        <div className="flex items-center gap-2 shrink-0 ml-4">
+          {/* Stats Badge */}
+          {isCardio && !isLifting ? (
+            <span className="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap">
+              {workout.durationMins}m{workout.distanceKm ? ` · ${workout.distanceKm}km` : ''}
+            </span>
+          ) : isLifting ? (
+            <span className="bg-purple-500/10 text-purple-400 border border-purple-500/20 px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap">
+              {workout.sets}×{workout.reps} @ {workout.weight ?? 0}kg
+            </span>
+          ) : null}
+
+          {/* RPE Badge */}
+          <span
+            className={cn(
+              'px-2 py-1 rounded-full border text-xs font-bold whitespace-nowrap',
+              rpeColor
+            )}
+          >
+            RPE {workout.rpe}
+          </span>
+
+          {/* Edit / Delete (visible on hover) */}
+          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => setEditOpen(true)}
+              className="p-1.5 rounded text-zinc-500 hover:text-lime-400 hover:bg-zinc-800 transition-colors"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+            {confirmDelete ? (
+              <Button
+                variant="ghost"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="text-red-400 hover:text-red-300 text-xs px-2 py-1 h-auto"
+              >
+                {isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Yes'}
+              </Button>
+            ) : (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="p-1.5 rounded text-zinc-500 hover:text-red-400 hover:bg-zinc-800 transition-colors"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Notes row — only if present, below the main line */}
+      {workout.note && (
+        <div className="-mt-1.5 ml-16 mb-1 text-xs text-zinc-500 italic truncate">
+          "{workout.note}"
+        </div>
+      )}
 
       {editOpen && <EditWorkoutModal workout={workout} onClose={() => setEditOpen(false)} />}
     </>

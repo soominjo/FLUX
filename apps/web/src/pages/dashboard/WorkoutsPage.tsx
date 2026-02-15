@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../../providers/AuthProvider'
 import { useWorkouts, useExerciseLogs } from '../../hooks/useWorkouts'
-import { useMyProviders } from '../../hooks/useRelationships'
+// useMyProviders removed — replaced "Your Team" card with "Total Cardio Load"
 import { calculateStreak } from '../../lib/flux-logic'
 import { LogWorkoutForm } from '../../components/tracking/LogWorkoutForm'
 import { WorkoutHistoryItem } from '../../components/tracking/WorkoutHistoryItem'
@@ -10,14 +10,13 @@ import { MuscleBalanceChart } from '../../components/analytics/MuscleBalanceChar
 import { UpdateBodyMetricsDialog } from '../../components/tracking/UpdateBodyMetricsDialog'
 import { useDailyMetricsRange } from '../../hooks/useDailyMetricsRange'
 import { Card, CardContent, CardHeader, CardTitle, Button } from '@repo/ui'
-import { Flame, Zap, Users, BarChart3, Scale, Plus, Pencil } from 'lucide-react'
+import { Flame, Dumbbell, Activity, BarChart3, Scale, Plus, Pencil } from 'lucide-react'
 import { NotificationBell } from '../../components/notifications/NotificationBell'
 
 export default function WorkoutsPage() {
   const { user, userProfile } = useAuth()
   const { data: workouts } = useWorkouts(user?.uid)
   const { data: exerciseLogs, isLoading: isLoadingLogs } = useExerciseLogs()
-  const { data: providers } = useMyProviders()
   const { data: dailyMetrics } = useDailyMetricsRange(14)
 
   const [showLogForm, setShowLogForm] = useState(false)
@@ -26,6 +25,43 @@ export default function WorkoutsPage() {
   const lastWorkout = workouts && workouts.length > 0 ? workouts[0] : null
   const weeklyStrain = workouts ? workouts.reduce((acc, w) => acc + (w.strainScore || 0), 0) : 0
   const streak = workouts ? calculateStreak(workouts.map(w => w.date)) : 0
+
+  // Calculate today's strength and cardio load from exercise logs
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const now = new Date()
+  const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+
+  const todayLogs = (exerciseLogs ?? []).filter(log => {
+    // performedAt is a Firestore Timestamp — convert to local YYYY-MM-DD
+    const ts = log.performedAt
+    if (!ts) return false
+    const d =
+      typeof ts === 'object' && 'toDate' in ts ? (ts as { toDate: () => Date }).toDate() : null
+    if (!d) return false
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` === todayStr
+  })
+
+  const strengthLoad = todayLogs
+    .filter(l => l.muscleGroup !== 'Cardio' && l.sets && l.reps)
+    .reduce((sum, l) => {
+      const weight = l.weight ?? 0
+      const rpe = l.rpe ?? 5
+      return sum + l.sets! * l.reps! * weight * (rpe / 10)
+    }, 0)
+
+  const cardioLoad = todayLogs
+    .filter(l => {
+      const lAny = l as Record<string, unknown>
+      const duration = l.durationMins || (lAny.durationMinutes as number) || 0
+      return l.muscleGroup === 'Cardio' || duration > 0
+    })
+    .reduce((sum, l) => {
+      const lAny = l as Record<string, unknown>
+      const duration = l.durationMins || (lAny.durationMinutes as number) || 0
+      const rpe = l.rpe ?? 5
+      const multiplier = rpe <= 3 ? 5 : rpe <= 6 ? 8 : rpe <= 9 ? 12 : 15
+      return sum + duration * multiplier
+    }, 0)
 
   // BMI display from profile (read-only here, dialog handles edits)
   const heightCm = userProfile?.metrics?.heightCm ?? 0
@@ -91,14 +127,14 @@ export default function WorkoutsPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="border-zinc-800 bg-zinc-900/50">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-zinc-400">Daily Readiness</CardTitle>
-                <Zap className="h-4 w-4 text-yellow-500" />
+                <CardTitle className="text-sm font-medium text-zinc-400">
+                  Total Strength Load
+                </CardTitle>
+                <Dumbbell className="h-4 w-4 text-purple-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-white">
-                  85 <span className="text-sm font-normal text-zinc-500">%</span>
-                </div>
-                <p className="text-xs text-zinc-500 mt-1">Ready for high intensity</p>
+                <div className="text-3xl font-bold text-white">{Math.round(strengthLoad)}</div>
+                <p className="text-xs text-zinc-500 mt-1">Daily Volume (kg)</p>
               </CardContent>
             </Card>
 
@@ -117,14 +153,14 @@ export default function WorkoutsPage() {
 
             <Card className="border-zinc-800 bg-zinc-900/50">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-zinc-400">Your Team</CardTitle>
-                <Users className="h-4 w-4 text-blue-400" />
+                <CardTitle className="text-sm font-medium text-zinc-400">
+                  Total Cardio Load
+                </CardTitle>
+                <Activity className="h-4 w-4 text-blue-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold text-white">
-                  {providers ? providers.length : 0}
-                </div>
-                <p className="text-xs text-zinc-500 mt-1">Active Connections</p>
+                <div className="text-3xl font-bold text-white">{Math.round(cardioLoad)}</div>
+                <p className="text-xs text-zinc-500 mt-1">Duration × Intensity</p>
               </CardContent>
             </Card>
           </div>

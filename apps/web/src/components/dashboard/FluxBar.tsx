@@ -1,6 +1,7 @@
 import { useFluxSync } from '../../hooks/useFluxSync'
 import { Card, CardContent, CardHeader, CardTitle } from '@repo/ui'
 import { ArrowDownUp } from 'lucide-react'
+import type { FluxState } from '../../lib/energyUtils'
 
 const ZONE_STYLES = {
   deficit: {
@@ -20,37 +21,47 @@ const ZONE_STYLES = {
   },
 } as const
 
-export function FluxBar() {
-  const { flux, isLoading, missingMetrics } = useFluxSync()
+interface FluxBarProps {
+  overrideFlux?: FluxState
+  periodLabel?: string
+}
 
-  if (isLoading) {
-    return (
-      <Card className="border-zinc-800 bg-zinc-900/50 animate-pulse">
-        <CardContent className="py-6">
-          <div className="h-4 bg-zinc-800 rounded w-3/4 mx-auto" />
-        </CardContent>
-      </Card>
-    )
+export function FluxBar({ overrideFlux, periodLabel }: FluxBarProps = {}) {
+  const { flux: syncFlux, isLoading, missingMetrics } = useFluxSync()
+  const flux = overrideFlux || syncFlux
+
+  if (!overrideFlux) {
+    if (isLoading) {
+      return (
+        <Card className="border-zinc-800 bg-zinc-900/50 animate-pulse">
+          <CardContent className="py-6">
+            <div className="h-4 bg-zinc-800 rounded w-3/4 mx-auto" />
+          </CardContent>
+        </Card>
+      )
+    }
+
+    if (missingMetrics || !flux) {
+      return (
+        <Card className="border-zinc-800 bg-zinc-900/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-zinc-400 flex items-center gap-2">
+              <ArrowDownUp className="h-4 w-4 text-lime-400" />
+              Energy Flux
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-zinc-500">
+              Set your height, weight, and age in{' '}
+              <span className="text-zinc-300">Body Composition</span> to activate Flux tracking.
+            </p>
+          </CardContent>
+        </Card>
+      )
+    }
   }
 
-  if (missingMetrics || !flux) {
-    return (
-      <Card className="border-zinc-800 bg-zinc-900/50">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-zinc-400 flex items-center gap-2">
-            <ArrowDownUp className="h-4 w-4 text-lime-400" />
-            Energy Flux
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-zinc-500">
-            Set your height, weight, and age in{' '}
-            <span className="text-zinc-300">Body Composition</span> to activate Flux tracking.
-          </p>
-        </CardContent>
-      </Card>
-    )
-  }
+  if (!flux) return null
 
   const style = ZONE_STYLES[flux.zone]
 
@@ -61,6 +72,9 @@ export function FluxBar() {
           <span className="flex items-center gap-2">
             <ArrowDownUp className="h-4 w-4 text-lime-400" />
             Energy Flux
+            {periodLabel && (
+              <span className="text-xs text-zinc-500 font-normal">({periodLabel})</span>
+            )}
           </span>
           <span className={`text-xs px-2 py-0.5 rounded-full border ${style.badge}`}>
             {style.label}

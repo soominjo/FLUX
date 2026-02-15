@@ -16,7 +16,11 @@ import { X, Loader2, Camera, Utensils } from 'lucide-react'
 
 // Re-reading request: "Ensure the 'Recent Meals' table fetches data using the useNutrition hook" -> This implies checking dashboard too.
 
-export function NutritionLogger() {
+interface NutritionLoggerProps {
+  targetDate?: Date
+}
+
+export function NutritionLogger({ targetDate }: NutritionLoggerProps = {}) {
   const [isOpen, setIsOpen] = useState(false)
   const { mutateAsync: logNutrition } = useLogNutrition()
   const [isLoading, setIsLoading] = useState(false)
@@ -34,6 +38,12 @@ export function NutritionLogger() {
     setIsLoading(true)
 
     try {
+      // Format targetDate to YYYY-MM-DD if provided, so the meal is saved
+      // to the day currently visible in the date filter (fixes UTC bug).
+      const dateStr = targetDate
+        ? `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')}`
+        : undefined
+
       await logNutrition({
         mealType,
         name: name || mealType,
@@ -43,8 +53,8 @@ export function NutritionLogger() {
           carbs: Number(carbs) || 0,
           fat: Number(fat) || 0,
         },
-        // view_file note: Schema calls this 'photoUrl'. Code can simulate logic for now.
-        photoUrl: '', // Placeholder
+        photoUrl: '',
+        date: dateStr,
       })
 
       // Reset
@@ -66,7 +76,7 @@ export function NutritionLogger() {
       <Button
         variant="outline"
         onClick={() => setIsOpen(true)}
-        className="w-full border-zinc-800 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white"
+        className="shrink-0 border-zinc-800 bg-lime-400 hover:bg-lime-500 text-zinc-900 hover:text-white"
       >
         <Utensils className="mr-2 h-4 w-4" /> Log Meal
       </Button>

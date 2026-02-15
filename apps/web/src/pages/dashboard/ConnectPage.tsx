@@ -4,16 +4,25 @@ import { ActivityFeedItem } from '../../components/social/ActivityFeedItem'
 import { Card, CardContent } from '@repo/ui'
 import { Users } from 'lucide-react'
 
-export default function ConnectPage() {
-  // Fetch ALL workouts the user has access to (team feed)
-  const { data: workouts, isLoading } = useWorkouts()
+interface ConnectPageProps {
+  viewAsId?: string
+}
+
+export default function ConnectPage({ viewAsId }: ConnectPageProps = {}) {
+  const isAdminView = !!viewAsId
+  // When admin views a trainee, fetch that trainee's workouts; otherwise show the team feed
+  const { data: workouts, isLoading } = useWorkouts(viewAsId)
 
   return (
     <>
       {/* Header */}
       <header className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Connect</h1>
-        <p className="text-zinc-400 mt-1">Manage your team and see what they're up to.</p>
+        <p className="text-zinc-400 mt-1">
+          {isAdminView
+            ? 'Viewing team activity — read only.'
+            : "Manage your team and see what they're up to."}
+        </p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -41,7 +50,9 @@ export default function ConnectPage() {
                 <Users className="h-12 w-12 text-zinc-700 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-white mb-2">No activity yet</h3>
                 <p className="text-zinc-500 max-w-sm mx-auto">
-                  Connect with a Trainer or Buddy to see their workouts here!
+                  {isAdminView
+                    ? 'This trainee has no visible workout activity.'
+                    : 'Connect with a Trainer or Buddy to see their workouts here!'}
                 </p>
               </CardContent>
             </Card>
@@ -50,7 +61,7 @@ export default function ConnectPage() {
 
         {/* Right Column: Invite Manager */}
         <div>
-          <InviteManager />
+          <InviteManager targetUserId={viewAsId} />
         </div>
       </div>
     </>

@@ -184,3 +184,32 @@ jobs:
           echo "- [ ] Verify application is accessible" >> $GITHUB_STEP_SUMMARY
           echo "- [ ] Check error monitoring (Sentry, etc.)" >> $GITHUB_STEP_SUMMARY
           echo "- [ ] Monitor performance metrics" >> $GITHUB_STEP_SUMMARY
+
+  # ==========================================================================
+  # Notification Job - Notify team on deployment result
+  # ==========================================================================
+  notify:
+    name: Notify Discord
+    runs-on: ubuntu-latest
+    needs: [deploy]
+    if: always() && needs.deploy.result == 'success'
+    steps:
+      - name: Send Discord notification
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          curl -H "Content-Type: application/json" \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"Production Deployment Successful\",
+                \"description\": \"FLUX has been deployed to production.\",
+                \"color\": 5763719,
+                \"fields\": [
+                  { \"name\": \"Commit\", \"value\": \"\`${{ github.sha }}\`\", \"inline\": true },
+                  { \"name\": \"Deployed by\", \"value\": \"@${{ github.actor }}\", \"inline\": true },
+                  { \"name\": \"Branch\", \"value\": \"\`${{ github.ref_name }}\`\", \"inline\": true }
+                ],
+                \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+              }]
+            }" \
+            "$DISCORD_WEBHOOK_URL"

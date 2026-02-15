@@ -37,18 +37,30 @@ export function useWorkouts(userId?: string) {
       // Original logic was: where('viewers', 'array-contains', user.uid) -> This actually fetches ALL workouts I can see!
       // So if I pass userId, I should add an EXTRA filter: where('userId', '==', targetUserId).
 
-      let q = query(
-        collection(db, 'workouts'),
-        where('viewers', 'array-contains', currentUser.uid),
-        orderBy('date', 'desc'),
-        limit(20)
-      )
+      let q
 
-      if (userId) {
+      if (userId && userId !== currentUser.uid) {
+        // Admin / cross-user view: query by userId only (Firestore rules enforce isAdmin)
         q = query(
           collection(db, 'workouts'),
           where('userId', '==', userId),
-          where('viewers', 'array-contains', currentUser.uid), // Still enforce I am a viewer
+          orderBy('date', 'desc'),
+          limit(20)
+        )
+      } else if (userId) {
+        // Own data with viewers filter
+        q = query(
+          collection(db, 'workouts'),
+          where('userId', '==', userId),
+          where('viewers', 'array-contains', currentUser.uid),
+          orderBy('date', 'desc'),
+          limit(20)
+        )
+      } else {
+        // Feed: all workouts I can see
+        q = query(
+          collection(db, 'workouts'),
+          where('viewers', 'array-contains', currentUser.uid),
           orderBy('date', 'desc'),
           limit(20)
         )
@@ -66,6 +78,36 @@ export function useWorkouts(userId?: string) {
       return workouts
     },
     enabled: !!auth.currentUser, // Only run if logged in
+  })
+}
+
+// Fetch Workouts in a date range (for aggregated views)
+export function useWorkoutsRange(startDate: Date, endDate: Date, userId?: string) {
+  return useQuery({
+    queryKey: [
+      ...WORKOUT_KEYS.all,
+      'range',
+      startDate.toISOString(),
+      endDate.toISOString(),
+      userId ?? 'self',
+    ],
+    queryFn: async (): Promise<Workout[]> => {
+      const currentUser = auth.currentUser
+      if (!currentUser) return []
+
+      const targetUserId = userId || currentUser.uid
+      const q = query(
+        collection(db, 'workouts'),
+        where('userId', '==', targetUserId),
+        where('date', '>=', startDate),
+        where('date', '<=', endDate),
+        orderBy('date', 'desc')
+      )
+
+      const snapshot = await getDocs(q)
+      return snapshot.docs.map(d => ({ id: d.id, ...d.data() }) as Workout)
+    },
+    enabled: !!auth.currentUser,
   })
 }
 

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { collection, query, where, getDocs, doc, getDoc, setDoc } from 'firebase/firestore'
 import { db, auth } from '../lib/firebase'
 import type { DailyMetric } from '@repo/shared'
 
@@ -63,7 +63,44 @@ export function useUpdateWater() {
       )
     },
     onSuccess: (_, variables) => {
+      // Invalidate the specific day AND all range/aggregate queries
       queryClient.invalidateQueries({ queryKey: METRICS_KEYS.byDate(variables.date) })
+      queryClient.invalidateQueries({ queryKey: METRICS_KEYS.all })
+      queryClient.invalidateQueries({ queryKey: ['daily-metrics-range'] })
     },
+  })
+}
+
+// Fetch daily metrics over a date range, optionally for a specific user.
+// Fetches all user docs then filters client-side to avoid composite-index issues.
+export function useMetricsRange(startDate: string, endDate: string, userId?: string) {
+  return useQuery({
+    queryKey: [...METRICS_KEYS.all, 'range', startDate, endDate, userId ?? 'self'],
+    queryFn: async (): Promise<DailyMetric[]> => {
+      const user = auth.currentUser
+      if (!user) return []
+
+      const targetUserId = userId || user.uid
+
+      // Single filter by userId — no composite index required
+      const q = query(collection(db, 'daily_metrics'), where('userId', '==', targetUserId))
+
+      try {
+        const snapshot = await getDocs(q)
+        const allMetrics = snapshot.docs.map(d => ({
+          id: d.id,
+          ...d.data(),
+        })) as DailyMetric[]
+
+        // Client-side date filter and sort
+        return allMetrics
+          .filter(m => m.date >= startDate && m.date <= endDate)
+          .sort((a, b) => (a.date > b.date ? 1 : -1))
+      } catch (err) {
+        console.error('[useMetricsRange] Firestore query failed:', err)
+        return []
+      }
+    },
+    enabled: !!auth.currentUser,
   })
 }

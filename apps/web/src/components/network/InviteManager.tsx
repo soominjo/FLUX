@@ -83,19 +83,26 @@ function ConnectionItem({
   )
 }
 
-export function InviteManager() {
+interface InviteManagerProps {
+  targetUserId?: string
+}
+
+export function InviteManager({ targetUserId }: InviteManagerProps = {}) {
   const { user } = useAuth()
   const { data: providers, isLoading: isLoadingProviders } = useMyProviders()
   const { data: pendingProviders } = useMyPendingProviders()
   const { mutateAsync: addConnection, isPending: isAdding } = useAddConnection()
+
+  const displayUserId = targetUserId || user?.uid
+  const isAdminView = !!targetUserId
 
   const [inviteCode, setInviteCode] = useState('')
   const [role, setRole] = useState<'TRAINER' | 'PHYSIO' | 'BUDDY'>('TRAINER')
   const [copied, setCopied] = useState(false)
 
   const handleCopy = () => {
-    if (user?.uid) {
-      navigator.clipboard.writeText(user.uid)
+    if (displayUserId) {
+      navigator.clipboard.writeText(displayUserId)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     }
@@ -128,7 +135,7 @@ export function InviteManager() {
           <div className="flex gap-2">
             <Input
               readOnly
-              value={user?.uid || ''}
+              value={displayUserId || ''}
               className="bg-zinc-950 border-zinc-800 text-zinc-400 font-mono text-xs md:text-sm"
             />
             <Button
@@ -140,7 +147,9 @@ export function InviteManager() {
             </Button>
           </div>
           <p className="text-xs text-zinc-500 mt-2">
-            Share this code with your Trainer or Physiotherapist so they can connect with you.
+            {isAdminView
+              ? "This trainee's invite code. Share it with providers so they can connect."
+              : 'Share this code with your Trainer or Physiotherapist so they can connect with you.'}
           </p>
         </CardContent>
       </Card>

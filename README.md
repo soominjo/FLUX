@@ -301,6 +301,51 @@ Packages are auto-discovered via `pnpm-workspace.yaml` (configured for `apps/*` 
 
 ---
 
+## Disaster Recovery & Seeding
+
+### Database Seeding
+
+FLUX includes a built-in seeding utility for bootstrapping development and staging environments with demo data.
+
+**Location:** `apps/web/src/lib/seed.ts`
+
+**What it seeds:**
+
+- Demo trainer and physio user profiles with predefined UIDs
+- Trainee-trainer relationship documents with viewer permissions
+- 5 days of workout history with realistic strain scores
+- 7 days of daily metrics (recovery, sleep, resting HR)
+
+**Usage:**
+
+```typescript
+import { seedDatabase } from './lib/seed'
+
+// Call with the authenticated user's UID
+await seedDatabase(currentUser.uid)
+```
+
+> **Warning:** Only run seeding against development or staging Firestore instances. Never seed production.
+
+### Backup & Restore
+
+| Action                   | Command                                                                      | Notes                                            |
+| ------------------------ | ---------------------------------------------------------------------------- | ------------------------------------------------ |
+| Export Firestore         | `gcloud firestore export gs://BUCKET/backups/YYYY-MM-DD`                     | Requires `datastore.databases.export` permission |
+| Import Firestore         | `gcloud firestore import gs://BUCKET/backups/YYYY-MM-DD`                     | Restores all collections                         |
+| Export single collection | `npx node-firestore-import-export --backupFile backup.json --nodePath users` | Community tool                                   |
+
+### Recovery Runbook
+
+1. **Identify the incident** - Check Firebase Console > Firestore for data integrity
+2. **Stop writes** - Temporarily enable maintenance mode via Security Rules (`allow write: if false`)
+3. **Restore from backup** - Import the most recent GCS backup
+4. **Verify data** - Run `pnpm test` against the restored database using the emulator
+5. **Re-enable writes** - Deploy the original Security Rules via `firebase deploy --only firestore:rules`
+6. **Post-mortem** - Document the incident in `docs/architecture/decisions/`
+
+---
+
 ## Useful Links
 
 - [Turborepo Documentation](https://turbo.build/repo/docs)
