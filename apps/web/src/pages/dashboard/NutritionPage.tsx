@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { useAuth } from '../../providers/AuthProvider'
 import { useNutritionRange, useDeleteNutrition } from '../../hooks/useNutrition'
 import { useFluxSync } from '../../hooks/useFluxSync'
@@ -218,6 +219,9 @@ export default function NutritionPage({ viewAsId }: NutritionPageProps = {}) {
 
   return (
     <div className="min-h-screen bg-zinc-950">
+      <Helmet>
+        <title>FLUX | Nutrition</title>
+      </Helmet>
       <header>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>

@@ -18,6 +18,7 @@
     "prepare": "husky",
     "changeset": "changeset",
     "version": "changeset version",
+    "version:changelog": "changeset version && git add CHANGELOG.md",
     "release": "changeset publish",
     "precheck": "pnpm lint && pnpm typecheck && pnpm build && pnpm test"
   },

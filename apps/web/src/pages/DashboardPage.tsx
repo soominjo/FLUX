@@ -1,4 +1,5 @@
 import { Navigate } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { useAuth } from '../providers/AuthProvider'
 
 const ROLE_REDIRECT: Record<string, string> = {
@@ -26,8 +27,13 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-900 text-white">
-      <h1 className="text-xl">Role not found. Please contact support.</h1>
-    </div>
+    <>
+      <Helmet>
+        <title>FLUX | Dashboard</title>
+      </Helmet>
+      <div className="flex min-h-screen items-center justify-center bg-zinc-900 text-white">
+        <h1 className="text-xl">Role not found. Please contact support.</h1>
+      </div>
+    </>
   )
 }

@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import { AuthProvider, useAuth } from './providers/AuthProvider'
 import LoginPage from './pages/auth/LoginPage'
 import SignUpPage from './pages/auth/SignUpPage'
@@ -80,6 +81,14 @@ const PublicOnlyRoute = () => {
 export function App() {
   return (
     <BrowserRouter>
+      <Helmet>
+        <title>FLUX | Performance Tracking Platform</title>
+        <meta
+          name="description"
+          content="FLUX is a fitness performance platform for tracking workouts, nutrition, strain, and recovery. Built for trainees, trainers, and physiotherapists."
+        />
+        <meta name="theme-color" content="#09090b" />
+      </Helmet>
       <AuthProvider>
         <Routes>
           {/* Public-Only Routes (redirect to dashboard if already logged in) */}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { useAuth } from '../../providers/AuthProvider'
 import { useWorkouts, useExerciseLogs } from '../../hooks/useWorkouts'
 // useMyProviders removed — replaced "Your Team" card with "Total Cardio Load"
@@ -90,6 +91,9 @@ export default function WorkoutsPage() {
 
   return (
     <div className="min-h-screen bg-zinc-950">
+      <Helmet>
+        <title>FLUX | Workouts</title>
+      </Helmet>
       {/* Header */}
       <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>

@@ -49,9 +49,18 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, ...props }, ref) => {
+  ({ className, variant, size, 'aria-label': ariaLabel, children, ...props }, ref) => {
+    // If size is 'icon' and no aria-label or text content is provided, add a default
+    const needsLabel = size === 'icon' && !ariaLabel && !children
     return (
-      <button className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
+      <button
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        aria-label={ariaLabel ?? (needsLabel ? 'Action' : undefined)}
+        {...props}
+      >
+        {children}
+      </button>
     )
   }
 )

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../../providers/AuthProvider'
@@ -47,6 +48,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-zinc-950 text-white p-4">
+      <Helmet>
+        <title>FLUX | Sign In</title>
+      </Helmet>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
